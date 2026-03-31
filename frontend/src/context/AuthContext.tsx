@@ -1,11 +1,17 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updatePassword, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth, loginWithGoogle, logout } from '../config/firebase';
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   login: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  signupWithEmail: (email: string, pass: string) => Promise<void>;
+  updateUserPassword: (newPass: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -18,15 +24,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("Setting up Firebase Auth state listener...");
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Firebase Auth triggered!", user);
       setCurrentUser(user);
       setLoading(false);
+    }, (error) => {
+      console.error("Firebase Auth Error:", error);
+      setLoading(false);
     });
-    return unsubscribe;
+
+    // Fallback in case Firebase silent-fails
+    const timeout = setTimeout(() => {
+        if(loading) {
+            console.log("Firebase taking too long, forcefully releasing loading lock.");
+            setLoading(false);
+        }
+    }, 2000);
+
+    return () => {
+        clearTimeout(timeout);
+        unsubscribe();
+    };
   }, []);
 
   const login = async () => {
     await loginWithGoogle();
+  };
+
+  const loginWithEmail = async (email: string, pass: string) => {
+    await signInWithEmailAndPassword(auth, email, pass);
+  };
+
+  const signupWithEmail = async (email: string, pass: string) => {
+    await createUserWithEmailAndPassword(auth, email, pass);
+  };
+
+  const updateUserPassword = async (newPass: string) => {
+    if (auth.currentUser) {
+      await updatePassword(auth.currentUser, newPass);
+    } else {
+      throw new Error("No user is currently logged in.");
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
+  const sendVerificationEmail = async () => {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    }
   };
 
   const handleLogout = async () => {
@@ -37,6 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentUser,
     loading,
     login,
+    loginWithEmail,
+    signupWithEmail,
+    updateUserPassword,
+    resetPassword,
+    sendVerificationEmail,
     logout: handleLogout
   };
 
@@ -46,3 +100,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
