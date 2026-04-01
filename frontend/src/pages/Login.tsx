@@ -62,12 +62,13 @@ const Login: React.FC = () => {
         navigate('/dashboard');
       } else {
         await signupWithEmail(email, password);
-        await sendVerificationEmail();
-        setMessage('Account created! Please check your email inbox to verify your account.');
-        // Switch back to login view after successful signup
-        setIsLogin(true);
-        setPassword('');
-        setConfirmPassword('');
+        try {
+          await sendVerificationEmail();
+        } catch (e) {
+          console.error("Failed to send initial verification email:", e);
+        }
+        // Navigate immediately to dashboard, where ProtectedRoute will show the "Verify Email" screen!
+        navigate('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');

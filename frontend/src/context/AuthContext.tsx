@@ -5,6 +5,7 @@ import { auth, loginWithGoogle, logout } from '../config/firebase';
 
 interface AuthContextType {
   currentUser: User | null;
+  userRole: string | null;
   loading: boolean;
   login: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
@@ -21,12 +22,26 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     console.log("Setting up Firebase Auth state listener...");
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("Firebase Auth triggered!", user);
+      if (user) {
+        try {
+          // Force refresh to get the latest custom claims (roles)
+          const idTokenResult = await user.getIdTokenResult(true);
+          const role = idTokenResult.claims.role as string || 'USER';
+          setUserRole(role);
+        } catch (e) {
+          console.error("Failed to fetch custom claims:", e);
+          setUserRole('USER');
+        }
+      } else {
+        setUserRole(null);
+      }
       setCurrentUser(user);
       setLoading(false);
     }, (error) => {
@@ -40,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log("Firebase taking too long, forcefully releasing loading lock.");
             setLoading(false);
         }
-    }, 2000);
+    }, 4000);
 
     return () => {
         clearTimeout(timeout);
@@ -84,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     currentUser,
+    userRole,
     loading,
     login,
     loginWithEmail,

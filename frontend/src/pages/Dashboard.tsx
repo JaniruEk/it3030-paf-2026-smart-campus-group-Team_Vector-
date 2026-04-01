@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 import ProfileModal from '../components/ProfileModal';
+import apiClient from '../api/apiClient';
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
-    const { currentUser, logout } = useAuth();
+    const { currentUser, userRole, logout } = useAuth();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
+    const navigate = useNavigate();
 
     return (
         <div className="dashboard-layout">
@@ -31,7 +35,16 @@ const Dashboard: React.FC = () => {
             <main className="dashboard-content">
                 <div className="welcome-card">
                     <h1>Welcome back!</h1>
-                    <p>You have successfully logged in using Firebase Auth.</p>
+                    <p>You have successfully logged in using Firebase Auth. Your current assigned role is: <strong>{userRole || 'USER'}</strong></p>
+                    
+                    {userRole === 'ADMIN' && (
+                        <button 
+                            onClick={() => navigate('/admin')}
+                            style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#8b5cf6', color: 'white', padding: '0.8rem 1.2rem', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                            <ShieldCheck size={18} /> Enter Admin Console to Manage Roles
+                        </button>
+                    )}
                 </div>
             </main>
 
