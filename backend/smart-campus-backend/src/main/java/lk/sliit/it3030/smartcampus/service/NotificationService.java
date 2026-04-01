@@ -3,6 +3,7 @@ package lk.sliit.it3030.smartcampus.service;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import lk.sliit.it3030.smartcampus.model.Notification;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,10 +16,12 @@ import java.util.concurrent.ExecutionException;
 public class NotificationService {
 
     private final Firestore firestore;
+    private final SimpMessagingTemplate messagingTemplate;
     private static final String COLLECTION_NAME = "notifications";
 
-    public NotificationService(Firestore firestore) {
+    public NotificationService(Firestore firestore, SimpMessagingTemplate messagingTemplate) {
         this.firestore = firestore;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public Notification createNotification(String recipientId, String message, String type) throws ExecutionException, InterruptedException {
@@ -34,6 +37,10 @@ public class NotificationService {
 
         ApiFuture<WriteResult> collectionsApiFuture = firestore.collection(COLLECTION_NAME).document(id).set(notification);
         collectionsApiFuture.get();
+        
+        // Push notification in real-time to the recipient's personal STOMP queue
+        messagingTemplate.convertAndSendToUser(recipientId, "/queue/notifications", notification);
+        
         return notification;
     }
 

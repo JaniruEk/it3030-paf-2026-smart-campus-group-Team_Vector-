@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.ListUsersPage;
 import lk.sliit.it3030.smartcampus.dto.UserRoleUpdateRequest;
+import lk.sliit.it3030.smartcampus.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,12 @@ import java.util.Map;
 @RequestMapping("/api/v1/users")
 @CrossOrigin(origins = "*")
 public class UserController {
+
+    private final NotificationService notificationService;
+
+    public UserController(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -57,6 +64,14 @@ public class UserController {
             Map<String, Object> claims = new HashMap<>();
             claims.put("role", request.getRole().toUpperCase());
             FirebaseAuth.getInstance().setCustomUserClaims(userId, claims);
+
+            try {
+                String msg = "A system administrator has updated your account role to " + request.getRole().toUpperCase() + ". Welcome!";
+                notificationService.createNotification(userId, msg, "ROLE_UPDATE");
+            } catch (Exception e) {
+                // Log and ignore to prevent role update failure just because notification failed
+                System.err.println("Failed to send notification: " + e.getMessage());
+            }
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Successfully updated role for user " + userId + " to " + request.getRole().toUpperCase());
