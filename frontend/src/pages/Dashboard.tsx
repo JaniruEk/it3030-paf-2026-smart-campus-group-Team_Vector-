@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 import ProfileModal from '../components/ProfileModal';
-import apiClient from '../api/apiClient';
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {

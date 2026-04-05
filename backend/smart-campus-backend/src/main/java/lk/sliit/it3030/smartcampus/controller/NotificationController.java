@@ -8,6 +8,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.google.firebase.auth.ExportedUserRecord;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.ListUsersPage;
+import lk.sliit.it3030.smartcampus.model.AuditLog;
+import lk.sliit.it3030.smartcampus.repository.AuditLogRepository;
 import java.util.List;
 import java.util.Map;
 
@@ -17,9 +22,11 @@ import java.util.Map;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final AuditLogRepository auditLogRepository;
 
-    public NotificationController(NotificationService notificationService) {
+    public NotificationController(NotificationService notificationService, AuditLogRepository auditLogRepository) {
         this.notificationService = notificationService;
+        this.auditLogRepository = auditLogRepository;
     }
 
     @GetMapping
@@ -35,8 +42,44 @@ public class NotificationController {
 
     @PostMapping("/broadcast")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> broadcastSystemNotification(@RequestBody Map<String, String> request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body("Broadcast feature registered successfully.");
+    public ResponseEntity<String> broadcastSystemNotification(@RequestBody Map<String, String> request, Authentication auth) {
+        try {
+            String message = request.get("message");
+            String targetRole = request.getOrDefault("role", "ALL"); // ALL, USER, TECHNICIAN, etc.
+            
+            ListUsersPage page = FirebaseAuth.getInstance().listUsers(null);
+            int count = 0;
+            for (ExportedUserRecord user : page.iterateAll()) {
+                String userRole = "USER";
+                Map<String, Object> claims = user.getCustomClaims();
+                if (claims != null && claims.containsKey("role")) {
+                    userRole = (String) claims.get("role");
+                }
+                
+                if (targetRole.equals("ALL") || targetRole.equals(userRole)) {
+                    notificationService.createNotification(user.getUid(), message, "BROADCAST");
+                    count++;
+                }
+            }
+            String performedBy = auth.getName();
+            try {
+                String email = FirebaseAuth.getInstance().getUser(performedBy).getEmail();
+                if (email != null) performedBy = email;
+            } catch (Exception ignored) {}
+            
+            auditLogRepository.save(AuditLog.builder()
+                        .action("BROADCAST_SENT")
+                        .performedBy(performedBy)
+                        .targetUser(targetRole)
+                        .details(message)
+                        .timestamp(new java.util.Date())
+                        .build());
+                        
+            return ResponseEntity.status(HttpStatus.CREATED).body("Broadcast sent to " + count + " users.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed to send broadcast: " + e.getMessage());
+        }
     }
 
     @PatchMapping("/{id}/read")
