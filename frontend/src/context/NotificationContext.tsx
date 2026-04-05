@@ -17,6 +17,7 @@ interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
 }
 
@@ -130,10 +131,24 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } catch(e) { console.error(e); }
   }
 
+  const markAllAsRead = async () => {
+    if (!currentUser) return;
+    try {
+      const token = await currentUser.getIdToken();
+      await fetch(`http://localhost:8080/api/v1/notifications/read-all`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, isRead: true }))
+      );
+    } catch(e) { console.error(e); }
+  };
+
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, deleteNotification }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification }}>
       {children}
     </NotificationContext.Provider>
   );
