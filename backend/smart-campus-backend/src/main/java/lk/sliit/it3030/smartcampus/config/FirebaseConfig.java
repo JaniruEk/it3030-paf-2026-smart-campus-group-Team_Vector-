@@ -31,12 +31,13 @@ public class FirebaseConfig {
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount.getInputStream()))
                 .build();
 
-        if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseApp app = FirebaseApp.initializeApp(options);
-            System.out.println("✅ Firebase initialized successfully!");
-            return app;
+        if (!FirebaseApp.getApps().isEmpty()) {
+            FirebaseApp.getInstance().delete();
         }
-        return FirebaseApp.getInstance();
+        
+        FirebaseApp app = FirebaseApp.initializeApp(options);
+        System.out.println("✅ Firebase initialized successfully!");
+        return app;
     }
 
     @Bean

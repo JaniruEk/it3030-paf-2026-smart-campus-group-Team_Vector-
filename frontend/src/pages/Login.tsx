@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus, Mail, Lock, CheckCircle } from 'lucide-react';
 import './Login.css';
 
 const Login: React.FC = () => {
-  const { login, loginWithEmail, signupWithEmail, resetPassword, sendVerificationEmail } = useAuth();
+  const { login, loginWithEmail, signupWithEmail, resetPassword, sendVerificationEmail, currentUser, userRole } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -21,13 +21,23 @@ const Login: React.FC = () => {
   const validateEmail = (emailStr: string) => /\S+@\S+\.\S+/.test(emailStr);
   const validatePassword = (passStr: string) => passStr.length >= 6;
 
+  useEffect(() => {
+    if (currentUser && userRole !== null) {
+      if (userRole === 'ADMIN') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [currentUser, userRole, navigate]);
+
   const handleGoogleLogin = async () => {
     try {
       setError('');
       setMessage('');
       setLoading(true);
       await login();
-      navigate('/dashboard');
+      // Navigation happens dynamically via useEffect above
     } catch (err: any) {
       setError(err.message || 'Failed to log in with Google.');
     } finally {
@@ -59,7 +69,7 @@ const Login: React.FC = () => {
       setLoading(true);
       if (isLogin) {
         await loginWithEmail(email, password);
-        navigate('/dashboard');
+        // Navigate via useEffect
       } else {
         await signupWithEmail(email, password);
         try {
@@ -67,8 +77,7 @@ const Login: React.FC = () => {
         } catch (e) {
           console.error("Failed to send initial verification email:", e);
         }
-        // Navigate immediately to dashboard, where ProtectedRoute will show the "Verify Email" screen!
-        navigate('/dashboard');
+        // Navigate via useEffect
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
