@@ -177,6 +177,17 @@
   padding: 1.5rem 1rem;
   border-right: 1px solid #e2e8f0;
   flex-shrink: 0;
+  transition: width 0.3s ease, padding 0.3s ease;
+}
+
+.admin-tabs.collapsed {
+  width: 70px;
+  padding: 1.5rem 0.5rem;
+}
+
+.admin-tabs.collapsed .tab-btn {
+  justify-content: center;
+  padding: 0.8rem 0;
 }
 
 .tab-btn {

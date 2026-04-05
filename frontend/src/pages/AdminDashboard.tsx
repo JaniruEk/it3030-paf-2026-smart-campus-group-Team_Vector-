@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
 import { ShieldCheck, ShieldAlert, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck } from 'lucide-react';
+import toast from 'react-hot-toast';
 import NotificationBell from '../components/NotificationBell';
-import ProfileModal from '../components/ProfileModal';
 import AdminSidebar from '../components/AdminSidebar';
 import './AdminDashboard.css';
+import './Dashboard.css';
 
 interface UserData {
   uid: string;
@@ -16,8 +17,7 @@ interface UserData {
 }
 
 const AdminDashboard: React.FC = () => {
-    const { userRole, currentUser, logout } = useAuth();
-    const [isProfileModalOpen, setProfileModalOpen] = useState(false);
+    const { userRole } = useAuth();
     const [users, setUsers] = useState<UserData[]>([]);
     const [healthData, setHealthData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -87,11 +87,11 @@ const AdminDashboard: React.FC = () => {
         setIsBroadcasting(true);
         try {
             await apiClient.post('/notifications/broadcast', { message: broadcastMsg, role: broadcastRole });
-            alert("Broadcast sent successfully!");
+            toast.success("Broadcast sent successfully!", { position: 'top-right' });
             setBroadcastMsg('');
             setActiveTab('overview');
         } catch(e: any) {
-            alert("Failed to send broadcast: " + (e.response?.data || e.message));
+            toast.error("Failed to send broadcast: " + (e.response?.data || e.message), { position: 'top-right' });
         } finally {
             setIsBroadcasting(false);
         }
@@ -137,29 +137,15 @@ const AdminDashboard: React.FC = () => {
             <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
             
             <div className="admin-main">
-                <div className="admin-header">
-                    <h2>Role Management Console</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <div className="admin-badge">
+                <header className="dashboard-header" style={{ margin: '-2rem -2rem 2rem -2rem' }}>
+                    <h2>Smart Campus Operations Hub</h2>
+                    <div className="header-actions">
+                        <div className="admin-badge" style={{ marginRight: '1rem' }}>
                             <ShieldAlert size={16} /> Secure Admin Area
                         </div>
                         <NotificationBell />
-                        <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                            <img src={currentUser?.photoURL || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} alt="Avatar" className="avatar" style={{width: '32px', height: '32px', borderRadius: '50%'}}/>
-                            <span 
-                                className="user-email" 
-                                style={{ cursor: 'pointer', fontWeight: '500', color: '#334155' }}
-                                onClick={() => setProfileModalOpen(true)}
-                                title="Click to view/edit profile"
-                            >
-                                {currentUser?.email}
-                            </span>
-                            <button onClick={logout} className="logout-btn" style={{ padding: '0.4rem 0.8rem', background: '#ef4444', color: 'white', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}>
-                                Logout
-                            </button>
-                        </div>
                     </div>
-                </div>
+                </header>
 
                 <div className="admin-content">
                     {activeTab === 'overview' && (
@@ -397,10 +383,6 @@ const AdminDashboard: React.FC = () => {
                 )}
                 </div>
             </div>
-
-            {isProfileModalOpen && (
-                <ProfileModal onClose={() => setProfileModalOpen(false)} />
-            )}
         </div>
     );
 };

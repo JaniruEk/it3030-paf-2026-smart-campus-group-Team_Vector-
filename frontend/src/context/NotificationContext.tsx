@@ -36,7 +36,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data);
+        const mappedData = data.map((n: any) => ({
+            ...n,
+            isRead: n.read !== undefined ? n.read : n.isRead
+        }));
+        setNotifications(mappedData);
       }
     } catch (e) {
       console.error("Failed to fetch initial notifications", e);
@@ -63,9 +67,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           reconnectDelay: 5000,
           onConnect: () => {
             console.log("WebSocket connected for Notifications!");
-            client?.subscribe('/user/queue/notifications', (message) => {
+            client?.subscribe(`/topic/notifications/${currentUser.uid}`, (message) => {
               if (message.body) {
-                const newNotification: Notification = JSON.parse(message.body);
+                const rawNotification = JSON.parse(message.body);
+                const newNotification: Notification = {
+                    ...rawNotification,
+                    isRead: rawNotification.read !== undefined ? rawNotification.read : rawNotification.isRead
+                };
                 setNotifications(prev => [newNotification, ...prev]);
                 toast.success(newNotification.message, { 
                     duration: 5000, 

@@ -38,8 +38,8 @@ public class NotificationService {
         ApiFuture<WriteResult> collectionsApiFuture = firestore.collection(COLLECTION_NAME).document(id).set(notification);
         collectionsApiFuture.get();
         
-        // Push notification in real-time to the recipient's personal STOMP queue
-        messagingTemplate.convertAndSendToUser(recipientId, "/queue/notifications", notification);
+        // Push notification in real-time to the recipient's personal STOMP topic
+        messagingTemplate.convertAndSend("/topic/notifications/" + recipientId, notification);
         
         return notification;
     }
@@ -47,7 +47,6 @@ public class NotificationService {
     public List<Notification> getNotificationsForUser(String userId) throws ExecutionException, InterruptedException {
         ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
                 .whereEqualTo("recipientId", userId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get();
 
         List<QueryDocumentSnapshot> documents = future.get().getDocuments();
@@ -56,6 +55,13 @@ public class NotificationService {
         for (DocumentSnapshot document : documents) {
             notifications.add(document.toObject(Notification.class));
         }
+        
+        // Sort in memory to avoid Firestore missing composite index runtime exceptions
+        notifications.sort((n1, n2) -> {
+            if (n1.getCreatedAt() == null || n2.getCreatedAt() == null) return 0;
+            return n2.getCreatedAt().compareTo(n1.getCreatedAt()); // Descending
+        });
+        
         return notifications;
     }
 
