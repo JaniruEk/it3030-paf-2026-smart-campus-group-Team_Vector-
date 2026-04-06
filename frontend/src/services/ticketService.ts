@@ -23,6 +23,15 @@ export const createTicket = async (payload: CreateTicketPayload): Promise<Mainte
   return response.data;
 };
 
+export const updateMyTicket = async (ticketId: string, payload: CreateTicketPayload): Promise<MaintenanceTicket> => {
+  const response = await apiClient.patch<MaintenanceTicket>(`/tickets/my/${ticketId}`, payload);
+  return response.data;
+};
+
+export const deleteMyTicket = async (ticketId: string): Promise<void> => {
+  await apiClient.delete(`/tickets/my/${ticketId}`);
+};
+
 export const getResources = async (): Promise<Resource[]> => {
   const response = await apiClient.get<Resource[]>('/resources');
   return response.data;

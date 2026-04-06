@@ -79,6 +79,7 @@ const TechnicianTickets = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sendingTicketId, setSendingTicketId] = useState<string | null>(null);
   const [statusUpdatingTicketId, setStatusUpdatingTicketId] = useState<string | null>(null);
+  const [expandedUpdatesByTicket, setExpandedUpdatesByTicket] = useState<Record<string, boolean>>({});
 
   const [messageByTicket, setMessageByTicket] = useState<Record<string, string>>({});
   const [imageByTicket, setImageByTicket] = useState<Record<string, MessageImage | undefined>>({});
@@ -199,6 +200,13 @@ const TechnicianTickets = () => {
     }
   };
 
+  const toggleTicketUpdates = (ticketId: string) => {
+    setExpandedUpdatesByTicket((prev) => ({
+      ...prev,
+      [ticketId]: !prev[ticketId],
+    }));
+  };
+
   return (
     <div className="technician-page">
       <header className="technician-header">
@@ -219,111 +227,131 @@ const TechnicianTickets = () => {
             const isUpdateBlocked = isUpdateBlockedStatus(ticket.status);
             const nextStatus = getNextTechnicianStatus(ticket.status);
             const isStatusUpdateDisabled = statusUpdatingTicketId === ticket.id || nextStatus === null;
+            const isUpdatesExpanded = Boolean(expandedUpdatesByTicket[ticket.id]);
+            const updateCount = ticket.ticketMessages?.length || 0;
 
             return (
               <article key={ticket.id} className="technician-ticket-card">
-                <div className="technician-ticket-head">
-                  <h3>{ticket.category} | {ticket.priority}</h3>
-                  <span className={`status-pill status-${(ticket.status || 'OPEN').toLowerCase()}`}>{ticket.status || 'OPEN'}</span>
-                </div>
-
-                <p><strong>Location:</strong> {ticket.resourceName || ticket.location}</p>
-                <p><strong>Description:</strong> {ticket.description}</p>
-                <p><strong>Requester Contact:</strong> {ticket.preferredContactMethod || 'ANY'} - {ticket.preferredContactDetails}</p>
-                <p><strong>Last Updated:</strong> {formatDate(ticket.updatedAt)}</p>
-
-                <div className="technician-status-actions">
-                  <button
-                    type="button"
-                    className="status-action-btn"
-                    disabled={isStatusUpdateDisabled}
-                    onClick={() => {
-                      if (!nextStatus) {
-                        return;
-                      }
-                      onUpdateStatus(ticket, nextStatus);
-                    }}
-                  >
-                    {statusUpdatingTicketId === ticket.id
-                      ? 'Updating Status...'
-                      : nextStatus === 'RESOLVED'
-                        ? 'Mark as Resolved'
-                        : nextStatus === 'IN_PROGRESS'
-                          ? 'Move Back to In Progress'
-                          : 'Status Update Not Available'}
-                  </button>
-                </div>
-
-                <div className="ticket-message-history">
-                  <h4>Ticket Updates</h4>
-                  {ticket.ticketMessages && ticket.ticketMessages.length > 0 ? (
-                    <div className="message-list">
-                      {ticket.ticketMessages.map((item, index) => (
-                        <div key={`${ticket.id}-${index}`} className="message-item">
-                          <div className="message-meta">
-                            <span>{item.senderEmail || item.senderRole || 'Update'}</span>
-                            <span>{formatDate(item.createdAt)}</span>
-                          </div>
-                          {item.message ? <p>{item.message}</p> : null}
-                          {item.imageDataUrl ? (
-                            <a href={item.imageDataUrl} target="_blank" rel="noreferrer" className="message-image-link">
-                              <img src={item.imageDataUrl} alt={item.imageFileName || 'Update image'} />
-                            </a>
-                          ) : null}
-                        </div>
-                      ))}
+                <div className="technician-ticket-layout">
+                  <div className="ticket-details-column">
+                    <div className="technician-ticket-head">
+                      <h3>{ticket.category} | {ticket.priority}</h3>
+                      <span className={`status-pill status-${(ticket.status || 'OPEN').toLowerCase()}`}>{ticket.status || 'OPEN'}</span>
                     </div>
-                  ) : (
-                    <p className="no-updates">No updates sent yet.</p>
-                  )}
-                </div>
 
-                {isUpdateBlocked ? (
-                  <p className="update-blocked-note">Updates are not allowed for this ticket status.</p>
-                ) : null}
+                    <p><strong>Location:</strong> {ticket.resourceName || ticket.location}</p>
+                    <p><strong>Description:</strong> {ticket.description}</p>
+                    <p><strong>Requester Contact:</strong> {ticket.preferredContactMethod || 'ANY'} - {ticket.preferredContactDetails}</p>
+                    <p><strong>Last Updated:</strong> {formatDate(ticket.updatedAt)}</p>
 
-                <form className="ticket-update-form" onSubmit={(event) => onSendUpdate(ticket, event)}>
-                  <textarea
-                    rows={3}
-                    placeholder="Write a ticket update..."
-                    value={messageByTicket[ticket.id] || ''}
-                    onChange={(event) => setMessageByTicket((prev) => ({
-                      ...prev,
-                      [ticket.id]: event.target.value,
-                    }))}
-                    disabled={isUpdateBlocked || sendingTicketId === ticket.id}
-                  />
-
-                  <div className="image-picker-row">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(event) => onImagePick(ticket.id, event)}
-                      disabled={isUpdateBlocked || sendingTicketId === ticket.id}
-                    />
-                    {imageByTicket[ticket.id] ? (
+                    <div className="technician-status-actions">
                       <button
                         type="button"
-                        className="clear-image-btn"
-                        onClick={() => clearImage(ticket.id)}
-                        disabled={isUpdateBlocked || sendingTicketId === ticket.id}
+                        className="status-action-btn"
+                        disabled={isStatusUpdateDisabled}
+                        onClick={() => {
+                          if (!nextStatus) {
+                            return;
+                          }
+                          onUpdateStatus(ticket, nextStatus);
+                        }}
                       >
-                        Remove Image
+                        {statusUpdatingTicketId === ticket.id
+                          ? 'Updating Status...'
+                          : nextStatus === 'RESOLVED'
+                            ? 'Mark as Resolved'
+                            : nextStatus === 'IN_PROGRESS'
+                              ? 'Move Back to In Progress'
+                              : 'Status Update Not Available'}
                       </button>
-                    ) : null}
+                    </div>
                   </div>
 
-                  {imageByTicket[ticket.id] ? (
-                    <div className="picked-image-preview">
-                      <img src={imageByTicket[ticket.id]?.dataUrl} alt={imageByTicket[ticket.id]?.fileName || 'Preview'} />
-                      <span>{imageByTicket[ticket.id]?.fileName}</span>
-                    </div>
-                  ) : null}
+                  <div className="ticket-update-column">
+                    {isUpdateBlocked ? (
+                      <p className="update-blocked-note">Updates are not allowed for this ticket status.</p>
+                    ) : null}
 
-                  <button type="submit" className="send-update-btn" disabled={isUpdateBlocked || sendingTicketId === ticket.id}>
-                    {sendingTicketId === ticket.id ? 'Sending...' : 'Send Update'}
-                  </button>
-                </form>
+                    <form className="ticket-update-form" onSubmit={(event) => onSendUpdate(ticket, event)}>
+                      <textarea
+                        rows={3}
+                        placeholder="Write a ticket update..."
+                        value={messageByTicket[ticket.id] || ''}
+                        onChange={(event) => setMessageByTicket((prev) => ({
+                          ...prev,
+                          [ticket.id]: event.target.value,
+                        }))}
+                        disabled={isUpdateBlocked || sendingTicketId === ticket.id}
+                      />
+
+                      <div className="image-picker-row">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(event) => onImagePick(ticket.id, event)}
+                          disabled={isUpdateBlocked || sendingTicketId === ticket.id}
+                        />
+                        {imageByTicket[ticket.id] ? (
+                          <button
+                            type="button"
+                            className="clear-image-btn"
+                            onClick={() => clearImage(ticket.id)}
+                            disabled={isUpdateBlocked || sendingTicketId === ticket.id}
+                          >
+                            Remove Image
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {imageByTicket[ticket.id] ? (
+                        <div className="picked-image-preview">
+                          <img src={imageByTicket[ticket.id]?.dataUrl} alt={imageByTicket[ticket.id]?.fileName || 'Preview'} />
+                          <span>{imageByTicket[ticket.id]?.fileName}</span>
+                        </div>
+                      ) : null}
+
+                      <button type="submit" className="send-update-btn" disabled={isUpdateBlocked || sendingTicketId === ticket.id}>
+                        {sendingTicketId === ticket.id ? 'Sending...' : 'Send Update'}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="ticket-message-history">
+                    <button
+                      type="button"
+                      className="ticket-updates-toggle"
+                      onClick={() => toggleTicketUpdates(ticket.id)}
+                      aria-expanded={isUpdatesExpanded}
+                      aria-label={`Toggle ticket updates for ticket ${ticket.id}`}
+                    >
+                      <span>Ticket Updates ({updateCount})</span>
+                      <span className={`ticket-updates-arrow ${isUpdatesExpanded ? 'expanded' : ''}`} aria-hidden="true" />
+                    </button>
+
+                    {isUpdatesExpanded ? (
+                      ticket.ticketMessages && ticket.ticketMessages.length > 0 ? (
+                        <div className="message-list">
+                          {ticket.ticketMessages.map((item, index) => (
+                            <div key={`${ticket.id}-${index}`} className="message-item">
+                              <div className="message-meta">
+                                <span>{item.senderEmail || item.senderRole || 'Update'}</span>
+                                <span>{formatDate(item.createdAt)}</span>
+                              </div>
+                              {item.message ? <p>{item.message}</p> : null}
+                              {item.imageDataUrl ? (
+                                <a href={item.imageDataUrl} target="_blank" rel="noreferrer" className="message-image-link">
+                                  <img src={item.imageDataUrl} alt={item.imageFileName || 'Update image'} />
+                                </a>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="no-updates">No updates sent yet.</p>
+                      )
+                    ) : null}
+                </div>
+                </div>
               </article>
             );
           })}

@@ -66,6 +66,14 @@ public class MaintenanceTicketRepository {
         return document.toObject(MaintenanceTicket.class);
     }
 
+    public String deleteById(String id) throws ExecutionException, InterruptedException {
+        ApiFuture<WriteResult> future = firestore.collection(COLLECTION_NAME)
+                .document(id)
+                .delete();
+
+        return future.get().getUpdateTime().toString();
+    }
+
     public List<MaintenanceTicket> findAll() throws ExecutionException, InterruptedException {
         ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).get();
         List<QueryDocumentSnapshot> documents = future.get().getDocuments();

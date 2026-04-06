@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,6 +58,43 @@ public class MaintenanceTicketController {
         try {
             String userId = authentication.getName();
             return ResponseEntity.ok(maintenanceTicketService.getMyTickets(userId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PatchMapping("/my/{ticketId}")
+    public ResponseEntity<?> updateMyTicket(@PathVariable String ticketId,
+                                            @Valid @RequestBody CreateMaintenanceTicketRequest request,
+                                            Authentication authentication) {
+        try {
+            String userId = authentication.getName();
+            MaintenanceTicket updatedTicket = maintenanceTicketService.updateMyTicket(userId, ticketId, request);
+            return ResponseEntity.ok(updatedTicket);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/my/{ticketId}")
+    public ResponseEntity<?> deleteMyTicket(@PathVariable String ticketId,
+                                            Authentication authentication) {
+        try {
+            String userId = authentication.getName();
+            maintenanceTicketService.deleteMyTicket(userId, ticketId);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }

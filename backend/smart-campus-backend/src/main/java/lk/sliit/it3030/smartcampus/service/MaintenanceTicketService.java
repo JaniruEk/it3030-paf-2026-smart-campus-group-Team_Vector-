@@ -52,6 +52,41 @@ public class MaintenanceTicketService {
         return maintenanceTicketRepository.findByUserId(userId);
     }
 
+    public MaintenanceTicket updateMyTicket(String userId,
+                                            String ticketId,
+                                            CreateMaintenanceTicketRequest request)
+            throws ExecutionException, InterruptedException {
+        validateRequest(request);
+
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+        validateTicketOwner(userId, ticket);
+
+        String currentStatus = ticket.getStatus() == null ? "OPEN" : ticket.getStatus().toUpperCase(Locale.ROOT);
+        if ("RESOLVED".equals(currentStatus) || "CLOSED".equals(currentStatus) || "REJECTED".equals(currentStatus)) {
+            throw new IllegalArgumentException("Ticket can only be edited before it is resolved");
+        }
+
+        ticket.setResourceId(trimToNull(request.getResourceId()));
+        ticket.setResourceName(trimToNull(request.getResourceName()));
+        ticket.setLocation(request.getLocation().trim());
+        ticket.setCategory(request.getCategory().trim().toUpperCase(Locale.ROOT));
+        ticket.setDescription(request.getDescription().trim());
+        ticket.setPriority(request.getPriority().trim().toUpperCase(Locale.ROOT));
+        ticket.setPreferredContactDetails(request.getPreferredContactDetails().trim());
+        ticket.setPreferredContactMethod(trimToNull(request.getPreferredContactMethod()));
+        ticket.setAttachments(mapAttachments(request.getAttachments()));
+        ticket.setUpdatedAt(new Date());
+
+        maintenanceTicketRepository.save(ticket);
+        return ticket;
+    }
+
+    public void deleteMyTicket(String userId, String ticketId) throws ExecutionException, InterruptedException {
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+        validateTicketOwner(userId, ticket);
+        maintenanceTicketRepository.deleteById(ticketId);
+    }
+
     public List<MaintenanceTicket> getAllTicketsForAdmin() throws ExecutionException, InterruptedException {
         return maintenanceTicketRepository.findAll();
     }
@@ -251,6 +286,13 @@ public class MaintenanceTicketService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void validateTicketOwner(String userId, MaintenanceTicket ticket) {
+        String ownerId = trimToNull(ticket.getUserId());
+        if (ownerId == null || !ownerId.equals(userId)) {
+            throw new IllegalArgumentException("You can only modify your own tickets");
+        }
     }
 
     private MaintenanceTicket getTicketOrThrow(String ticketId) throws ExecutionException, InterruptedException {

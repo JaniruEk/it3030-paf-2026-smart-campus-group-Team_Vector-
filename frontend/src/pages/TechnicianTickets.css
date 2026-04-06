@@ -53,6 +53,18 @@
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
+.technician-ticket-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.ticket-update-column {
+  border-left: 1px dashed #cbd5e1;
+  padding-left: 1rem;
+}
+
 .technician-ticket-head {
   display: flex;
   justify-content: space-between;
@@ -116,16 +128,42 @@
 }
 
 .ticket-message-history {
+  grid-column: 1 / -1;
   margin-top: 0.9rem;
   border-top: 1px dashed #cbd5e1;
   padding-top: 0.8rem;
 }
 
-.ticket-message-history h4 {
-  margin: 0 0 0.6rem;
+.ticket-updates-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #0f172a;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.ticket-updates-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid #475569;
+  transition: transform 0.2s ease;
+}
+
+.ticket-updates-arrow.expanded {
+  transform: rotate(180deg);
 }
 
 .message-list {
+  margin-top: 0.6rem;
   display: grid;
   gap: 0.65rem;
 }
@@ -167,21 +205,21 @@
 }
 
 .no-updates {
-  margin: 0;
+  margin: 0.6rem 0 0;
   color: #64748b;
 }
 
 .update-blocked-note {
-  margin: 0.9rem 0 0;
+  margin: 0 0 0.7rem;
   color: #b91c1c;
   font-size: 0.86rem;
   font-weight: 600;
 }
 
 .ticket-update-form {
-  margin-top: 0.9rem;
-  border-top: 1px dashed #cbd5e1;
-  padding-top: 0.9rem;
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
   display: grid;
   gap: 0.7rem;
 }
@@ -196,6 +234,7 @@
 
 .ticket-update-form textarea {
   resize: vertical;
+  min-height: 110px;
 }
 
 .image-picker-row {
@@ -253,6 +292,18 @@
   .technician-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .technician-ticket-layout {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .ticket-update-column {
+    border-left: none;
+    border-top: 1px dashed #cbd5e1;
+    padding-left: 0;
+    padding-top: 0.9rem;
   }
 
   .technician-ticket-head {
