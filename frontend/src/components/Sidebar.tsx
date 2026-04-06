@@ -1,27 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Database, ShieldAlert, ChevronLeft, ChevronRight, LogOut, ClipboardList } from 'lucide-react';
+import { 
+    ShieldCheck, 
+    Database, 
+    ShieldAlert, 
+    ChevronLeft, 
+    ChevronRight, 
+    LogOut, 
+    ClipboardList,
+    Home
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
-interface AdminSidebarProps {
-    activeTab?: 'overview' | 'audit' | 'broadcast';
+interface SidebarProps {
+    activeTab?: 'overview' | 'audit' | 'broadcast' | 'none';
     setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast') => void;
 }
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     const [isCollapsed, setIsCollapsed] = useState(() => {
-        return localStorage.getItem('admin_sidebar_collapsed') === 'true';
+        return localStorage.getItem('sidebar_collapsed') === 'true';
     });
-    const { currentUser, logout } = useAuth();
+    const { currentUser, userRole, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
-    const isTicketsActive = location.pathname === '/admin/tickets';
+    const isTicketsActive = location.pathname === '/admin/tickets' || location.pathname === '/tickets' || location.pathname === '/technician/tickets';
+    const isDashboardActive = location.pathname === '/dashboard';
 
     useEffect(() => {
-        localStorage.setItem('admin_sidebar_collapsed', isCollapsed.toString());
+        localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
     }, [isCollapsed]);
 
     const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast') => {
@@ -62,6 +72,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
                         >
                             {currentUser?.email}
                         </span>
+                        <div className="role-badge" style={{ marginBottom: '1rem' }}>{userRole}</div>
                         <button onClick={logout} className="logout-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.6rem' }}>
                             <LogOut size={16} /> Logout
                         </button>
@@ -69,18 +80,45 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
                 )}
             </div>
 
-            <button className={`tab-btn ${activeTab === 'overview' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('overview')} title="System Overview">
-                <ShieldCheck size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>System Overview</span>}
-            </button>
-            <button className={`tab-btn ${activeTab === 'audit' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('audit')} title="Audit Logs">
-                <Database size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Audit Logs</span>}
-            </button>
-            <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
-                <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
-            </button>
-            <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">
-                <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Manage Tickets</span>}
-            </Link>
+            {/* SHARED: Dashboard/Home */}
+            {(userRole === 'USER' || userRole === 'TECHNICIAN') && (
+                <Link className={`tab-btn ${isDashboardActive ? 'active' : ''}`} to="/dashboard" title="Dashboard">
+                    <Home size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Home</span>}
+                </Link>
+            )}
+
+            {/* ADMIN SPECIFIC TABS */}
+            {userRole === 'ADMIN' && (
+                <>
+                    <button className={`tab-btn ${activeTab === 'overview' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('overview')} title="System Overview">
+                        <ShieldCheck size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>System Overview</span>}
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'audit' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('audit')} title="Audit Logs">
+                        <Database size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Audit Logs</span>}
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
+                        <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
+                    </button>
+                    <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">
+                        <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Manage Tickets</span>}
+                    </Link>
+                </>
+            )}
+
+            {/* TECHNICIAN SPECIFIC TABS */}
+            {userRole === 'TECHNICIAN' && (
+                <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/technician/tickets" title="Assigned Tickets">
+                    <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Assigned Tickets</span>}
+                </Link>
+            )}
+
+            {/* USER SPECIFIC TABS */}
+            {userRole === 'USER' && (
+                <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/tickets" title="My Tickets">
+                    <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>My Tickets</span>}
+                </Link>
+            )}
+
             
             {isProfileModalOpen && (
                 <ProfileModal onClose={() => setProfileModalOpen(false)} />
@@ -89,4 +127,4 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
     );
 };
 
-export default AdminSidebar;
+export default Sidebar;

@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, ShieldAlert, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck, Send, Eye, Target } from 'lucide-react';
+import { ShieldCheck, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck, Send, Eye, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
-import NotificationBell from '../components/NotificationBell';
-import AdminSidebar from '../components/AdminSidebar';
+import AppLayout from '../components/AppLayout';
 import './AdminDashboard.css';
 import './Dashboard.css';
 
@@ -161,382 +160,371 @@ const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div className="admin-dashboard-layout">
-            <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-            
-            <div className="admin-main">
-                <header className="dashboard-header" style={{ margin: '-2rem -2rem 2rem -2rem' }}>
-                    <h2>Smart Campus Operations Hub</h2>
-                    <div className="header-actions">
-                        <div className="admin-badge" style={{ marginRight: '1rem' }}>
-                            <ShieldAlert size={16} /> Secure Admin Area
-                        </div>
-                        <NotificationBell />
-                    </div>
-                </header>
-
-                <div className="admin-content">
-                    {activeTab === 'overview' && (
-                    <>
-                        <div className="admin-card">
-                    <div 
-                        className="card-header" 
-                        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                        onClick={() => setIsHealthExpanded(!isHealthExpanded)}
-                    >
-                        <div>
-                            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Secure System Health</h3>
-                            <p style={{ margin: 0, marginTop: '4px' }}>Real-time telemetry and monitoring data. ADMIN ONLY.</p>
-                        </div>
-                        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                            {isHealthExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
-                    </div>
-                    {isHealthExpanded && (
-                        <>
-                            {healthLoading ? (
-                                 <div className="loading-state">Accessing secure health telemetry...</div>
-                            ) : healthData ? (
-                                <div className="health-dashboard">
-                                    <div 
-                                        className="health-stat-card health-main-status"
-                                        onClick={() => setSelectedStat({
-                                            title: "System Status",
-                                            value: healthData.status,
-                                            desc: "The overall health of the Smart Campus platform. All API services, background workers, and critical processes are currently active and responding within normal parameters.",
-                                            icon: <ShieldCheck size={48} />,
-                                            color: healthData.status?.includes('Online') ? '#10b981' : '#f59e0b'
-                                        })}
-                                    >
-                                        <span className="health-stat-title">System Status</span>
-                                        <span className={`health-stat-value ${healthData.status?.includes('Online') ? 'ok' : 'warning'}`}>
-                                            {healthData.status}
-                                        </span>
-                                    </div>
-                                    <div 
-                                        className="health-stat-card"
-                                        onClick={() => setSelectedStat({
-                                            title: "Database Integrity",
-                                            value: healthData.databaseStatus,
-                                            desc: "Direct connectivity to Cloud Firestore. Latency is within optimal range and data consistency is being maintained across all global nodes.",
-                                            icon: <Database size={48} />,
-                                            color: '#10b981'
-                                        })}
-                                    >
-                                        <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Database Integrity</span>
-                                        <span className="health-stat-value ok">{healthData.databaseStatus}</span>
-                                    </div>
-                                    <div 
-                                        className="health-stat-card"
-                                        onClick={() => setSelectedStat({
-                                            title: "RAM Usage",
-                                            value: healthData.memoryUsage,
-                                            desc: "Total memory consumption of the Spring Boot application server. Maintaining usage below system-defined thresholds to ensure high availability.",
-                                            icon: <MemoryStick size={48} />,
-                                            color: '#3b82f6'
-                                        })}
-                                    >
-                                        <span className="health-stat-title"><MemoryStick size={16} style={{display:'inline', marginBottom:'-2px'}}/> RAM Usage</span>
-                                        <span className="health-stat-value">{healthData.memoryUsage}</span>
-                                    </div>
-                                    <div 
-                                        className="health-stat-card"
-                                        onClick={() => setSelectedStat({
-                                            title: "CPU Usage",
-                                            value: healthData.cpuUsage,
-                                            desc: "The current processing load on the server. Low utilization indicates efficient resource management and high capacity for concurrent operations.",
-                                            icon: <Cpu size={48} />,
-                                            color: '#8b5cf6'
-                                        })}
-                                    >
-                                        <span className="health-stat-title"><Cpu size={16} style={{display:'inline', marginBottom:'-2px'}}/> CPU Usage</span>
-                                        <span className="health-stat-value">{healthData.cpuUsage}</span>
-                                    </div>
-                                    <div 
-                                        className="health-stat-card"
-                                        onClick={() => setSelectedStat({
-                                            title: "Total Active Users",
-                                            value: healthData.activeUsers || 0,
-                                            desc: "Registered campus personnel tracked in Firebase Authentication. This includes all Administrators, Technicians, and Students.",
-                                            icon: <Users size={48} />,
-                                            color: '#3b82f6'
-                                        })}
-                                    >
-                                        <span className="health-stat-title"><Users size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Active Users</span>
-                                        <span className="health-stat-value">{healthData.activeUsers || 0}</span>
-                                    </div>
-                                    <div 
-                                        className="health-stat-card"
-                                        onClick={() => setSelectedStat({
-                                            title: "Online Now",
-                                            value: healthData.onlineUsers || 0,
-                                            desc: "The number of users currently connected via real-time WebSocket channels. These users are currently active in the UI and receiving live updates.",
-                                            icon: <UserCheck size={48} />,
-                                            color: '#10b981'
-                                        })}
-                                    >
-                                        <span className="health-stat-title"><UserCheck size={16} style={{display:'inline', marginBottom:'-2px', color:'#10b981'}}/> Online Now</span>
-                                        <span className="health-stat-value ok">{healthData.onlineUsers || 0}</span>
-                                    </div>
-                                    <div 
-                                        className="health-stat-card"
-                                        onClick={() => setSelectedStat({
-                                            title: "Total Resources",
-                                            value: healthData.totalResources !== undefined ? healthData.totalResources : 'N/A',
-                                            desc: "Total inventory of smart campus assets, including laboratories, equipment, and reservable facilities stored in the database.",
-                                            icon: <Target size={48} />,
-                                            color: '#64748b'
-                                        })}
-                                    >
-                                        <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Resources</span>
-                                        <span className="health-stat-value">{healthData.totalResources !== undefined ? healthData.totalResources : 'N/A'}</span>
-                                    </div>
-                                </div>
-                    ) : (
-                        <div className="empty-state">Failed to load secure health data. Check permissions.</div>
-                    )}
-                        </>
-                    )}
+        <AppLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+            <div className="admin-card">
+                <div className="card-header">
+                    <h3>Smart Campus Operations Hub</h3>
+                    <p>Real-time system telemetry, log monitoring, and global broadcasts.</p>
                 </div>
+            </div>
 
-                <div className="admin-card" style={{ marginTop: '2rem' }}>
-                    <div 
-                        className="card-header"
-                        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                        onClick={() => setIsUsersExpanded(!isUsersExpanded)}
-                    >
-                        <div>
-                            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Registered Users</h3>
-                            <p style={{ margin: 0, marginTop: '4px' }}>Manage access levels and permissions for all campus personnel.</p>
+            {activeTab === 'overview' && (
+                <>
+                    <div className="admin-card" style={{ marginTop: '2rem' }}>
+                        <div 
+                            className="card-header" 
+                            style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            onClick={() => setIsHealthExpanded(!isHealthExpanded)}
+                        >
+                            <div>
+                                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Secure System Health</h3>
+                                <p style={{ margin: 0, marginTop: '4px' }}>Real-time telemetry and monitoring data. ADMIN ONLY.</p>
+                            </div>
+                            <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                                {isHealthExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </button>
                         </div>
-                        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                            {isUsersExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
+                        {isHealthExpanded && (
+                            <>
+                                {healthLoading ? (
+                                     <div className="loading-state">Accessing secure health telemetry...</div>
+                                ) : healthData ? (
+                                    <div className="health-dashboard">
+                                        <div 
+                                            className="health-stat-card health-main-status"
+                                            onClick={() => setSelectedStat({
+                                                title: "System Status",
+                                                value: healthData.status,
+                                                desc: "The overall health of the Smart Campus platform. All API services, background workers, and critical processes are currently active and responding within normal parameters.",
+                                                icon: <ShieldCheck size={48} />,
+                                                color: healthData.status?.includes('Online') ? '#10b981' : '#f59e0b'
+                                            })}
+                                        >
+                                            <span className="health-stat-title">System Status</span>
+                                            <span className={`health-stat-value ${healthData.status?.includes('Online') ? 'ok' : 'warning'}`}>
+                                                {healthData.status}
+                                            </span>
+                                        </div>
+                                        <div 
+                                            className="health-stat-card"
+                                            onClick={() => setSelectedStat({
+                                                title: "Database Integrity",
+                                                value: healthData.databaseStatus,
+                                                desc: "Direct connectivity to Cloud Firestore. Latency is within optimal range and data consistency is being maintained across all global nodes.",
+                                                icon: <Database size={48} />,
+                                                color: '#10b981'
+                                            })}
+                                        >
+                                            <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Database Integrity</span>
+                                            <span className="health-stat-value ok">{healthData.databaseStatus}</span>
+                                        </div>
+                                        <div 
+                                            className="health-stat-card"
+                                            onClick={() => setSelectedStat({
+                                                title: "RAM Usage",
+                                                value: healthData.memoryUsage,
+                                                desc: "Total memory consumption of the Spring Boot application server. Maintaining usage below system-defined thresholds to ensure high availability.",
+                                                icon: <MemoryStick size={48} />,
+                                                color: '#3b82f6'
+                                            })}
+                                        >
+                                            <span className="health-stat-title"><MemoryStick size={16} style={{display:'inline', marginBottom:'-2px'}}/> RAM Usage</span>
+                                            <span className="health-stat-value">{healthData.memoryUsage}</span>
+                                        </div>
+                                        <div 
+                                            className="health-stat-card"
+                                            onClick={() => setSelectedStat({
+                                                title: "CPU Usage",
+                                                value: healthData.cpuUsage,
+                                                desc: "The current processing load on the server. Low utilization indicates efficient resource management and high capacity for concurrent operations.",
+                                                icon: <Cpu size={48} />,
+                                                color: '#8b5cf6'
+                                            })}
+                                        >
+                                            <span className="health-stat-title"><Cpu size={16} style={{display:'inline', marginBottom:'-2px'}}/> CPU Usage</span>
+                                            <span className="health-stat-value">{healthData.cpuUsage}</span>
+                                        </div>
+                                        <div 
+                                            className="health-stat-card"
+                                            onClick={() => setSelectedStat({
+                                                title: "Total Active Users",
+                                                value: healthData.activeUsers || 0,
+                                                desc: "Registered campus personnel tracked in Firebase Authentication. This includes all Administrators, Technicians, and Students.",
+                                                icon: <Users size={48} />,
+                                                color: '#3b82f6'
+                                            })}
+                                        >
+                                            <span className="health-stat-title"><Users size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Active Users</span>
+                                            <span className="health-stat-value">{healthData.activeUsers || 0}</span>
+                                        </div>
+                                        <div 
+                                            className="health-stat-card"
+                                            onClick={() => setSelectedStat({
+                                                title: "Online Now",
+                                                value: healthData.onlineUsers || 0,
+                                                desc: "The number of users currently connected via real-time WebSocket channels. These users are currently active in the UI and receiving live updates.",
+                                                icon: <UserCheck size={48} />,
+                                                color: '#10b981'
+                                            })}
+                                        >
+                                            <span className="health-stat-title"><UserCheck size={16} style={{display:'inline', marginBottom:'-2px', color:'#10b981'}}/> Online Now</span>
+                                            <span className="health-stat-value ok">{healthData.onlineUsers || 0}</span>
+                                        </div>
+                                        <div 
+                                            className="health-stat-card"
+                                            onClick={() => setSelectedStat({
+                                                title: "Total Resources",
+                                                value: healthData.totalResources !== undefined ? healthData.totalResources : 'N/A',
+                                                desc: "Total inventory of smart campus assets, including laboratories, equipment, and reservable facilities stored in the database.",
+                                                icon: <Target size={48} />,
+                                                color: '#64748b'
+                                            })}
+                                        >
+                                            <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Resources</span>
+                                            <span className="health-stat-value">{healthData.totalResources !== undefined ? healthData.totalResources : 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="empty-state">Failed to load secure health data. Check permissions.</div>
+                                )}
+                            </>
+                        )}
                     </div>
-                    
-                    {isUsersExpanded && (
-                        <>
-                            {loading ? (
-                                <div className="loading-state">Loading users securely...</div>
-                            ) : (
+
+                    <div className="admin-card" style={{ marginTop: '2rem' }}>
+                        <div 
+                            className="card-header"
+                            style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            onClick={() => setIsUsersExpanded(!isUsersExpanded)}
+                        >
+                            <div>
+                                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Registered Users</h3>
+                                <p style={{ margin: 0, marginTop: '4px' }}>Manage access levels and permissions for all campus personnel.</p>
+                            </div>
+                            <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                                {isUsersExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </button>
+                        </div>
+                        
+                        {isUsersExpanded && (
+                            <>
+                                {loading ? (
+                                    <div className="loading-state">Loading users securely...</div>
+                                ) : (
+                                    <div className="table-responsive">
+                                        <table className="users-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>User ID</th>
+                                                    <th>Email</th>
+                                                    <th>Current Role</th>
+                                                    <th>Manage Access</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {users.map(user => (
+                                                    <tr key={user.uid}>
+                                                        <td className="mono">{user.uid.substring(0,8)}...</td>
+                                                        <td>{user.email}</td>
+                                                        <td>
+                                                            <div className="role-badge">
+                                                                {getRoleIcon(user.role)}
+                                                                {user.role || 'USER'}
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div className="role-selector">
+                                                                <select 
+                                                                    value={user.role || 'USER'} 
+                                                                    onChange={(e) => handleRoleUpdate(user.uid, e.target.value)}
+                                                                    disabled={updatingId === user.uid || user.disabled}
+                                                                    className={updatingId === user.uid ? 'updating' : ''}
+                                                                >
+                                                                    <option value="USER">User (Standard)</option>
+                                                                    <option value="TECHNICIAN">Technician</option>
+                                                                    <option value="ADMIN">Administrator</option>
+                                                                </select>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <button 
+                                                                style={{ 
+                                                                    padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 600,
+                                                                    background: user.disabled ? '#10b981' : '#ef4444', color: 'white'
+                                                                }}
+                                                                onClick={() => handleStatusUpdate(user.uid, user.disabled)}
+                                                                disabled={updatingId === user.uid}
+                                                            >
+                                                                {user.disabled ? 'Enable' : 'Suspend'}
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {users.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan={4} className="empty-state">No users found.</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'audit' && (
+                <div className="admin-card">
+                    <div className="card-header">
+                        <h3>System Audit Logs</h3>
+                        <p>Immutable record of critical administrative actions.</p>
+                    </div>
+                    {loadingAudit ? (
+                        <div className="loading-state">Fetching secure logs...</div>
+                    ) : (
                         <div className="table-responsive">
                             <table className="users-table">
                                 <thead>
                                     <tr>
-                                        <th>User ID</th>
-                                        <th>Email</th>
-                                        <th>Current Role</th>
-                                        <th>Manage Access</th>
-                                        <th>Status</th>
+                                        <th>Timestamp</th>
+                                        <th>Action Performed</th>
+                                        <th>Performed By</th>
+                                        <th>Target Reference</th>
+                                        <th>Details</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map(user => (
-                                        <tr key={user.uid}>
-                                            <td className="mono">{user.uid.substring(0,8)}...</td>
-                                            <td>{user.email}</td>
+                                    {auditLogs.map((log) => (
+                                        <tr key={log.id} className="audit-row" onClick={() => setSelectedLog(log)}>
+                                            <td className="mono">{new Date(log.timestamp).toLocaleString()}</td>
                                             <td>
-                                                <div className="role-badge">
-                                                    {getRoleIcon(user.role)}
-                                                    {user.role || 'USER'}
-                                                </div>
+                                                <span className={`action-badge ${getActionBadgeClass(log.action)}`}>
+                                                    {log.action.replace('_', ' ')}
+                                                </span>
                                             </td>
-                                            <td>
-                                                <div className="role-selector">
-                                                    <select 
-                                                        value={user.role || 'USER'} 
-                                                        onChange={(e) => handleRoleUpdate(user.uid, e.target.value)}
-                                                        disabled={updatingId === user.uid || user.disabled}
-                                                        className={updatingId === user.uid ? 'updating' : ''}
-                                                    >
-                                                        <option value="USER">User (Standard)</option>
-                                                        <option value="TECHNICIAN">Technician</option>
-                                                        <option value="ADMIN">Administrator</option>
-                                                    </select>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <button 
-                                                    style={{ 
-                                                        padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 600,
-                                                        background: user.disabled ? '#10b981' : '#ef4444', color: 'white'
-                                                    }}
-                                                    onClick={() => handleStatusUpdate(user.uid, user.disabled)}
-                                                    disabled={updatingId === user.uid}
-                                                >
-                                                    {user.disabled ? 'Enable' : 'Suspend'}
-                                                </button>
+                                            <td>{log.performedBy}</td>
+                                            <td className="mono" style={{ fontSize: '0.8rem' }}>{log.targetUser}</td>
+                                            <td style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {log.details || '-'}
                                             </td>
                                         </tr>
                                     ))}
-                                    {users.length === 0 && (
+                                    {auditLogs.length === 0 && (
                                         <tr>
-                                            <td colSpan={4} className="empty-state">No users found.</td>
+                                            <td colSpan={5} className="empty-state">No audit logs recorded yet.</td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
-                            )}
-                        </>
                     )}
                 </div>
-                </>
-                )}
+            )}
 
-                {activeTab === 'audit' && (
-                    <div className="admin-card">
-                        <div className="card-header">
-                            <h3>System Audit Logs</h3>
-                            <p>Immutable record of critical administrative actions.</p>
-                        </div>
-                        {loadingAudit ? (
-                            <div className="loading-state">Fetching secure logs...</div>
-                        ) : (
-                            <div className="table-responsive">
-                                <table className="users-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Timestamp</th>
-                                            <th>Action Performed</th>
-                                            <th>Performed By</th>
-                                            <th>Target Reference</th>
-                                            <th>Details</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {auditLogs.map((log) => (
-                                            <tr key={log.id} className="audit-row" onClick={() => setSelectedLog(log)}>
-                                                <td className="mono">{new Date(log.timestamp).toLocaleString()}</td>
-                                                <td>
-                                                    <span className={`action-badge ${getActionBadgeClass(log.action)}`}>
-                                                        {log.action.replace('_', ' ')}
-                                                    </span>
-                                                </td>
-                                                <td>{log.performedBy}</td>
-                                                <td className="mono" style={{ fontSize: '0.8rem' }}>{log.targetUser}</td>
-                                                <td style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {log.details || '-'}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {auditLogs.length === 0 && (
-                                            <tr>
-                                                <td colSpan={5} className="empty-state">No audit logs recorded yet.</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+            {activeTab === 'broadcast' && (
+                <div className="admin-card">
+                    <div className="card-header" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Send size={24} style={{ color: '#3b82f6' }} />
+                            Global Broadcast Center
+                        </h3>
+                        <p>Distribute real-time intelligence and alerts to the campus network.</p>
                     </div>
-                )}
-
-                {activeTab === 'broadcast' && (
-                    <div className="admin-card">
-                        <div className="card-header" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <Send size={24} style={{ color: '#3b82f6' }} />
-                                Global Broadcast Center
-                            </h3>
-                            <p>Distribute real-time intelligence and alerts to the campus network.</p>
-                        </div>
-                        
-                        <div className="broadcast-grid">
-                            {/* Left: Form */}
-                            <div className="broadcast-form-section">
-                                <section>
-                                    <h4 className="preview-label" style={{ marginBottom: '1rem' }}>
-                                        <Target size={16} /> Select Audience
-                                    </h4>
-                                    <div className="audience-selector">
-                                        {[
-                                            { id: 'ALL', label: 'All Users', icon: <Users size={20} /> },
-                                            { id: 'ADMIN', label: 'Admins', icon: <ShieldCheck size={20} /> },
-                                            { id: 'TECHNICIAN', label: 'Techs', icon: <UserCog size={20} /> },
-                                            { id: 'USER', label: 'Students', icon: <User size={20} /> },
-                                        ].map((role) => (
-                                            <label key={role.id} className="role-option">
-                                                <input 
-                                                    type="radio" 
-                                                    name="audience" 
-                                                    value={role.id} 
-                                                    checked={broadcastRole === role.id}
-                                                    onChange={(e) => setBroadcastRole(e.target.value)}
-                                                />
-                                                <div className="role-card">
-                                                    {role.icon}
-                                                    <span>{role.label}</span>
-                                                </div>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <h4 className="preview-label" style={{ marginBottom: '1rem' }}>
-                                        Broadcast Message
-                                    </h4>
-                                    <div className="broadcast-textarea-wrapper">
-                                        <textarea 
-                                            value={broadcastMsg}
-                                            onChange={(e) => setBroadcastMsg(e.target.value.substring(0, 280))}
-                                            placeholder="What's the announcement? (Max 280 chars)"
-                                            required
-                                        />
-                                        <div className="char-counter">
-                                            {broadcastMsg.length}/280
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <button 
-                                    className={`send-broadcast-btn ${broadcastMsg.trim() ? 'pulse-glowing' : ''}`}
-                                    onClick={handleBroadcast}
-                                    disabled={isBroadcasting || !broadcastMsg.trim()}
-                                >
-                                    {isBroadcasting ? (
-                                        <>Deploying Broadcast...</>
-                                    ) : (
-                                        <>
-                                            <Send size={18} /> SEND BROADCAST NOW
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Right: Preview */}
-                            <div className="live-preview-section">
-                                <h4 className="preview-label">
-                                    <Eye size={16} /> Live UI Preview
+                    
+                    <div className="broadcast-grid">
+                        <div className="broadcast-form-section">
+                            <section>
+                                <h4 className="preview-label" style={{ marginBottom: '1rem' }}>
+                                    <Target size={16} /> Select Audience
                                 </h4>
-                                
-                                <div className="preview-card-skeleton">
-                                    <div className="preview-tag">
-                                        BROADCAST: {broadcastRole}
-                                    </div>
-                                    <div className={`preview-content-placeholder ${!broadcastMsg ? 'empty' : ''}`}>
-                                        {broadcastMsg || "Start typing to see how your message will appear to the campus..."}
-                                    </div>
-                                    <div className="preview-footer">
-                                        <span className="preview-time">Just now</span>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#f1f5f9' }} />
-                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#f1f5f9' }} />
-                                        </div>
-                                    </div>
+                                <div className="audience-selector">
+                                    {[
+                                        { id: 'ALL', label: 'All Users', icon: <Users size={20} /> },
+                                        { id: 'ADMIN', label: 'Admins', icon: <ShieldCheck size={20} /> },
+                                        { id: 'TECHNICIAN', label: 'Techs', icon: <UserCog size={20} /> },
+                                        { id: 'USER', label: 'Students', icon: <User size={20} /> },
+                                    ].map((role) => (
+                                        <label key={role.id} className="role-option">
+                                            <input 
+                                                type="radio" 
+                                                name="audience" 
+                                                value={role.id} 
+                                                checked={broadcastRole === role.id}
+                                                onChange={(e) => setBroadcastRole(e.target.value)}
+                                            />
+                                            <div className="role-card">
+                                                {role.icon}
+                                                <span>{role.label}</span>
+                                            </div>
+                                        </label>
+                                    ))}
                                 </div>
+                            </section>
 
-                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: '1.4', padding: '0 0.5rem' }}>
-                                    <strong>Note:</strong> This message will be delivered instantly via WebSocket 
-                                    to all online personnel in the selected group.
+                            <section>
+                                <h4 className="preview-label" style={{ marginBottom: '1rem' }}>
+                                    Broadcast Message
+                                </h4>
+                                <div className="broadcast-textarea-wrapper">
+                                    <textarea 
+                                        value={broadcastMsg}
+                                        onChange={(e) => setBroadcastMsg(e.target.value.substring(0, 280))}
+                                        placeholder="What's the announcement? (Max 280 chars)"
+                                        required
+                                    />
+                                    <div className="char-counter">
+                                        {broadcastMsg.length}/280
+                                    </div>
                                 </div>
+                            </section>
+
+                            <button 
+                                className={`send-broadcast-btn ${broadcastMsg.trim() ? 'pulse-glowing' : ''}`}
+                                onClick={handleBroadcast}
+                                disabled={isBroadcasting || !broadcastMsg.trim()}
+                            >
+                                {isBroadcasting ? (
+                                    <>Deploying Broadcast...</>
+                                ) : (
+                                    <>
+                                        <Send size={18} /> SEND BROADCAST NOW
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        <div className="live-preview-section">
+                            <h4 className="preview-label">
+                                <Eye size={16} /> Live UI Preview
+                            </h4>
+                            
+                            <div className="preview-card-skeleton">
+                                <div className="preview-tag">
+                                    BROADCAST: {broadcastRole}
+                                </div>
+                                <div className={`preview-content-placeholder ${!broadcastMsg ? 'empty' : ''}`}>
+                                    {broadcastMsg || "Start typing to see how your message will appear to the campus..."}
+                                </div>
+                                <div className="preview-footer">
+                                    <span className="preview-time">Just now</span>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#f1f5f9' }} />
+                                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#f1f5f9' }} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: '1.4', padding: '0 0.5rem' }}>
+                                <strong>Note:</strong> This message will be delivered instantly via WebSocket 
+                                to all online personnel in the selected group.
                             </div>
                         </div>
                     </div>
-                )}
                 </div>
-            </div>
+            )}
 
             {selectedLog && (
                 <div className="audit-modal-overlay" onClick={() => setSelectedLog(null)}>
@@ -620,7 +608,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </AppLayout>
     );
 };
 

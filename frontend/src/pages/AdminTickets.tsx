@@ -4,9 +4,8 @@ import { toast } from 'react-hot-toast';
 import apiClient from '../api/apiClient';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
-import AdminSidebar from '../components/AdminSidebar';
-import NotificationBell from '../components/NotificationBell';
-import { ShieldAlert, CheckCircle } from 'lucide-react';
+import AppLayout from '../components/AppLayout';
+import { CheckCircle } from 'lucide-react';
 import './AdminTickets.css';
 import './AdminDashboard.css';
 
@@ -24,12 +23,6 @@ type TicketDisplayStatus = TicketStatusOption | 'REJECTED';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
 type TicketPriority = typeof PRIORITY_OPTIONS[number];
-
-const formatDate = (value?: string) => {
-  if (!value) return 'N/A';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
-};
 
 const getErrorMessage = (error: unknown) => {
   if (typeof error === 'object' && error !== null) {
@@ -167,166 +160,150 @@ const AdminTickets = () => {
   };
 
   return (
-    <div className="admin-dashboard-layout">
-      <AdminSidebar activeTab={undefined} setActiveTab={undefined} />
-      
-      <div className="admin-main">
-        <header className="dashboard-header" style={{ margin: '-2rem -2rem 2rem -2rem' }}>
-          <h2>Smart Campus Operations Hub</h2>
-          <div className="header-actions">
-            <div className="admin-badge" style={{ marginRight: '1rem' }}>
-              <ShieldAlert size={16} /> Secure Admin Area
-            </div>
-            <NotificationBell />
+    <AppLayout activeTab="none">
+      <div className="admin-card">
+        <div className="card-header">
+          <h3>Maintenance Ticket Management</h3>
+          <p>Oversee campus-wide incidents, assign personnel, and monitor resolutions.</p>
+        </div>
+
+        <div className="health-dashboard" style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+          <div className="health-stat-card">
+            <span className="health-stat-title">Total Tickets</span>
+            <span className="health-stat-value">{tickets.length}</span>
           </div>
-        </header>
-
-        <div className="admin-content">
-          <div className="admin-card">
-            <div className="card-header">
-              <h3>Maintenance Ticket Management</h3>
-              <p>Oversee campus-wide incidents, assign personnel, and monitor resolutions.</p>
-            </div>
-
-            <div className="health-dashboard" style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
-              <div className="health-stat-card">
-                <span className="health-stat-title">Total Tickets</span>
-                <span className="health-stat-value">{tickets.length}</span>
-              </div>
-              <div className="health-stat-card">
-                <span className="health-stat-title">Open</span>
-                <span className="health-stat-value warning">{ticketCountByStatus.OPEN || 0}</span>
-              </div>
-              <div className="health-stat-card">
-                <span className="health-stat-title">In Progress</span>
-                <span className="health-stat-value ok" style={{ color: '#3b82f6' }}>{ticketCountByStatus.IN_PROGRESS || 0}</span>
-              </div>
-              <div className="health-stat-card">
-                <span className="health-stat-title">Resolved</span>
-                <span className="health-stat-value ok">{ticketCountByStatus.RESOLVED || 0}</span>
-              </div>
-            </div>
-
-            <div style={{ padding: '2rem' }}>
-              {isLoading ? (
-                <div className="loading-state">Accessing secure ticket database...</div>
-              ) : tickets.length === 0 ? (
-                <div className="empty-state">No tickets registered in the system.</div>
-              ) : (
-                <div className="admin-ticket-list">
-                  {tickets.map((ticket) => {
-                    const ticketId = ticket.id!;
-                    const status = normalizeStatus(ticket.status);
-                    const priority = normalizePriority(ticket.priority);
-                    const isRejected = status === 'REJECTED';
-                    const isOpen = status === 'OPEN';
-
-                    return (
-                      <article className="admin-ticket-card" key={ticketId}>
-                        <div className="admin-ticket-card-head">
-                          <div className="ticket-title-group">
-                            <h3>{ticket.category} Issue</h3>
-                            <div className="badge-row">
-                              <span className={`status-pill status-${status.toLowerCase()}`}>{status}</span>
-                              <span className={`priority-pill priority-${priority.toLowerCase()}`}>{priority}</span>
-                            </div>
-                          </div>
-                          
-                          {!isRejected && (
-                            <div className="status-control">
-                              <label>Update Status</label>
-                              <select
-                                className={`ticket-status-select`}
-                                value={status}
-                                onChange={(e) => handleStatusChange(ticketId, e.target.value as TicketStatusOption)}
-                                disabled={actionTicketId === ticketId || status === 'CLOSED'}
-                              >
-                                {STATUS_OPTIONS.map((opt) => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="admin-ticket-grid">
-                          <div className="ticket-info-main">
-                            <div className="info-row">
-                              <div className="info-item">
-                                <label>Requester</label>
-                                <span>{getRequestedByEmail(ticket.userId)}</span>
-                              </div>
-                              <div className="info-item">
-                                <label>Location</label>
-                                <span>{ticket.resourceName || ticket.location}</span>
-                              </div>
-                            </div>
-                            <div className="info-item full">
-                              <label>Description</label>
-                              <p>{ticket.description}</p>
-                            </div>
-                            <div className="info-item full">
-                              <label>Assigned Staff</label>
-                              <span style={{ color: ticket.assignedTechnicianEmail ? '#0f172a' : '#94a3b8', fontWeight: 600 }}>
-                                {ticket.assignedTechnicianEmail || 'Awaiting Assignment'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="ticket-attachments-side">
-                            <label>Attachments</label>
-                            {ticket.attachments && ticket.attachments.length > 0 ? (
-                              <div className="attachment-previews">
-                                {ticket.attachments.map((img, i) => (
-                                  <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer">
-                                    <img src={img.dataUrl} alt="Incident" />
-                                  </a>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="no-attachments">No visual evidence provided</div>
-                            )}
-                          </div>
-                        </div>
-
-                        {ticket.resolutionNotes && (
-                          <div className="resolution-notes-box">
-                            <label><CheckCircle size={14} /> Resolution Notes</label>
-                            <p>{ticket.resolutionNotes}</p>
-                          </div>
-                        )}
-
-                        <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
-
-                        {isOpen && (
-                          <div className="admin-ticket-actions">
-                            <form className="assign-form" onSubmit={(e) => handleAssignTechnician(ticket, e)}>
-                              <select
-                                value={selectedTechByTicket[ticketId] || ''}
-                                onChange={(e) => setSelectedTechByTicket(prev => ({ ...prev, [ticketId]: e.target.value }))}
-                              >
-                                <option value="">Select Technician</option>
-                                {technicians.map(t => <option key={t.uid} value={t.uid}>{t.email}</option>)}
-                              </select>
-                              <button type="submit" disabled={!selectedTechByTicket[ticketId] || actionTicketId === ticketId}>
-                                Assign Staff
-                              </button>
-                            </form>
-                            <button className="reject-btn" onClick={() => handleRejectTicket(ticketId, status)}>
-                              Reject Request
-                            </button>
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+          <div className="health-stat-card">
+            <span className="health-stat-title">Open</span>
+            <span className="health-stat-value warning">{ticketCountByStatus.OPEN || 0}</span>
+          </div>
+          <div className="health-stat-card">
+            <span className="health-stat-title">In Progress</span>
+            <span className="health-stat-value ok" style={{ color: '#3b82f6' }}>{ticketCountByStatus.IN_PROGRESS || 0}</span>
+          </div>
+          <div className="health-stat-card">
+            <span className="health-stat-title">Resolved</span>
+            <span className="health-stat-value ok">{ticketCountByStatus.RESOLVED || 0}</span>
           </div>
         </div>
+
+        <div style={{ padding: '2rem' }}>
+          {isLoading ? (
+            <div className="loading-state">Accessing secure ticket database...</div>
+          ) : tickets.length === 0 ? (
+            <div className="empty-state">No tickets registered in the system.</div>
+          ) : (
+            <div className="admin-ticket-list">
+              {tickets.map((ticket) => {
+                const ticketId = ticket.id!;
+                const status = normalizeStatus(ticket.status);
+                const priority = normalizePriority(ticket.priority);
+                const isRejected = status === 'REJECTED';
+                const isOpen = status === 'OPEN';
+
+                return (
+                  <article className="admin-ticket-card" key={ticketId}>
+                    <div className="admin-ticket-card-head">
+                      <div className="ticket-title-group">
+                        <h3>{ticket.category} Issue</h3>
+                        <div className="badge-row">
+                          <span className={`status-pill status-${status.toLowerCase()}`}>{status}</span>
+                          <span className={`priority-pill priority-${priority.toLowerCase()}`}>{priority}</span>
+                        </div>
+                      </div>
+                      
+                      {!isRejected && (
+                        <div className="status-control">
+                          <label>Update Status</label>
+                          <select
+                            className={`ticket-status-select`}
+                            value={status}
+                            onChange={(e) => handleStatusChange(ticketId, e.target.value as TicketStatusOption)}
+                            disabled={actionTicketId === ticketId || status === 'CLOSED'}
+                          >
+                            {STATUS_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="admin-ticket-grid">
+                      <div className="ticket-info-main">
+                        <div className="info-row">
+                          <div className="info-item">
+                            <label>Requester</label>
+                            <span>{getRequestedByEmail(ticket.userId)}</span>
+                          </div>
+                          <div className="info-item">
+                            <label>Location</label>
+                            <span>{ticket.resourceName || ticket.location}</span>
+                          </div>
+                        </div>
+                        <div className="info-item full">
+                          <label>Description</label>
+                          <p>{ticket.description}</p>
+                        </div>
+                        <div className="info-item full">
+                          <label>Assigned Staff</label>
+                          <span style={{ color: ticket.assignedTechnicianEmail ? '#0f172a' : '#94a3b8', fontWeight: 600 }}>
+                            {ticket.assignedTechnicianEmail || 'Awaiting Assignment'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="ticket-attachments-side">
+                        <label>Attachments</label>
+                        {ticket.attachments && ticket.attachments.length > 0 ? (
+                          <div className="attachment-previews">
+                            {ticket.attachments.map((img, i) => (
+                              <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer">
+                                <img src={img.dataUrl} alt="Incident" />
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="no-attachments">No visual evidence provided</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {ticket.resolutionNotes && (
+                      <div className="resolution-notes-box">
+                        <label><CheckCircle size={14} /> Resolution Notes</label>
+                        <p>{ticket.resolutionNotes}</p>
+                      </div>
+                    )}
+
+                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+
+                    {isOpen && (
+                      <div className="admin-ticket-actions">
+                        <form className="assign-form" onSubmit={(e) => handleAssignTechnician(ticket, e)}>
+                          <select
+                            value={selectedTechByTicket[ticketId] || ''}
+                            onChange={(e) => setSelectedTechByTicket(prev => ({ ...prev, [ticketId]: e.target.value }))}
+                          >
+                            <option value="">Select Technician</option>
+                            {technicians.map(t => <option key={t.uid} value={t.uid}>{t.email}</option>)}
+                          </select>
+                          <button type="submit" disabled={!selectedTechByTicket[ticketId] || actionTicketId === ticketId}>
+                            Assign Staff
+                          </button>
+                        </form>
+                        <button className="reject-btn" onClick={() => handleRejectTicket(ticketId, status)}>
+                          Reject Request
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

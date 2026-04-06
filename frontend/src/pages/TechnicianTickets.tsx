@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getAssignedTechnicianTickets, updateTicketStatusByTechnician } from '../services/ticketService';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
+import AppLayout from '../components/AppLayout';
 import './TechnicianTickets.css';
+import './AdminDashboard.css';
 
 const formatDate = (value?: string) => {
   if (!value) return 'N/A';
@@ -64,82 +65,120 @@ const TechnicianTickets = () => {
   };
 
   return (
-    <div className="technician-page">
-      <header className="technician-header">
-        <div>
-          <h2>Technician Workspace</h2>
+    <AppLayout activeTab="none">
+      <div className="admin-card">
+        <div className="card-header">
+          <h3>Technician Workspace</h3>
           <p>Manage your assigned maintenance tasks and communicate with users.</p>
         </div>
-        <Link to="/dashboard" className="back-link">Back to Dashboard</Link>
-      </header>
 
-      {isLoading ? (
-        <div className="technician-state-card">Loading assigned tickets...</div>
-      ) : tickets.length === 0 ? (
-        <div className="technician-state-card">No tickets assigned to you at the moment.</div>
-      ) : (
-        <div className="technician-ticket-list">
-          {tickets.map((ticket) => (
-            <article key={ticket.id} className="technician-ticket-card">
-              <div className="tech-ticket-badge-row">
-                <span className={`status-pill status-${(ticket.status || 'OPEN').toLowerCase()}`}>{ticket.status || 'OPEN'}</span>
-                <span className={`status-pill priority-${(ticket.priority || 'LOW').toLowerCase()}`}>{ticket.priority || 'LOW'}</span>
-              </div>
-
-              <div className="technician-ticket-head">
-                <h3>{ticket.category} Issue</h3>
-              </div>
-
-              <div className="ticket-details-box">
-                <p><strong>Created:</strong> {formatDate(ticket.createdAt)}</p>
-                <p><strong>Location:</strong> {ticket.resourceName || ticket.location}</p>
-                <p><strong>Description:</strong> {ticket.description}</p>
-                <p><strong>Requester Contact:</strong> {ticket.preferredContactMethod || 'ANY'} - {ticket.preferredContactDetails}</p>
-                
-                {ticket.resolutionNotes && (
-                  <div className="resolution-display-box">
-                    <strong>Current Resolution Notes:</strong>
-                    <p>{ticket.resolutionNotes}</p>
+        <div style={{ padding: '2rem' }}>
+          {isLoading ? (
+            <div className="loading-state">Accessing maintenance queue...</div>
+          ) : tickets.length === 0 ? (
+            <div className="empty-state">No tickets assigned to you at the moment.</div>
+          ) : (
+            <div className="ticket-list">
+              {tickets.map((ticket) => (
+                <article key={ticket.id} className="admin-ticket-card">
+                  <div className="admin-ticket-card-head">
+                    <div className="ticket-title-group">
+                      <h3>{ticket.category} Issue</h3>
+                      <div className="badge-row">
+                        <span className={`status-pill status-${(ticket.status || 'OPEN').toLowerCase()}`}>{ticket.status || 'OPEN'}</span>
+                        <span className={`priority-pill priority-${(ticket.priority || 'LOW').toLowerCase()}`}>{ticket.priority || 'LOW'}</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              <div className="technician-status-actions">
-                {ticket.status === 'OPEN' && (
-                  <button 
-                    className="status-action-btn"
-                    onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
-                    disabled={updatingTicketId === ticket.id}
-                  >
-                    Start Working
-                  </button>
-                )}
-                {ticket.status === 'IN_PROGRESS' && (
-                  <button 
-                    className="status-action-btn resolve-action"
-                    onClick={() => handleUpdateStatus(ticket.id, 'RESOLVED')}
-                    disabled={updatingTicketId === ticket.id}
-                  >
-                    Resolve Ticket
-                  </button>
-                )}
-                {ticket.status === 'RESOLVED' && (
-                  <button 
-                    className="status-action-btn"
-                    onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
-                    disabled={updatingTicketId === ticket.id}
-                  >
-                    Reopen for Work
-                  </button>
-                )}
-              </div>
+                  <div className="admin-ticket-grid">
+                    <div className="ticket-info-main">
+                      <div className="info-row">
+                        <div className="info-item">
+                          <label>Assigned On</label>
+                          <span>{formatDate(ticket.createdAt)}</span>
+                        </div>
+                        <div className="info-item">
+                          <label>Location / Asset</label>
+                          <span>{ticket.resourceName || ticket.location}</span>
+                        </div>
+                      </div>
+                      <div className="info-item full">
+                        <label>Reported Issue</label>
+                        <p>{ticket.description}</p>
+                      </div>
+                      <div className="info-item full">
+                        <label>Requester Context</label>
+                        <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                          {ticket.preferredContactMethod || 'ANY'} - {ticket.preferredContactDetails}
+                        </span>
+                      </div>
+                    </div>
 
-              <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
-            </article>
-          ))}
+                    <div className="ticket-attachments-side">
+                      <label>Incident Evidence</label>
+                      {ticket.attachments && ticket.attachments.length > 0 ? (
+                        <div className="attachment-previews">
+                          {ticket.attachments.map((img, i) => (
+                            <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer">
+                              <img src={img.dataUrl} alt="Evidence" />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="no-attachments">No images attached</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="technician-status-actions" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+                    {ticket.status === 'OPEN' && (
+                      <button 
+                        className="status-action-btn"
+                        onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
+                        disabled={updatingTicketId === ticket.id}
+                        style={{ background: '#3b82f6' }}
+                      >
+                        Start Working
+                      </button>
+                    )}
+                    {ticket.status === 'IN_PROGRESS' && (
+                      <button 
+                        className="status-action-btn resolve-action"
+                        onClick={() => handleUpdateStatus(ticket.id, 'RESOLVED')}
+                        disabled={updatingTicketId === ticket.id}
+                        style={{ background: '#10b981' }}
+                      >
+                        Complete & Resolve
+                      </button>
+                    )}
+                    {(ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') && (
+                      <button 
+                        className="status-action-btn"
+                        onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
+                        disabled={updatingTicketId === ticket.id}
+                        style={{ background: '#64748b' }}
+                      >
+                        Re-open Assignment
+                      </button>
+                    )}
+                  </div>
+
+                  {ticket.resolutionNotes && (
+                    <div className="resolution-notes-box">
+                      <label>Your Resolution Summary</label>
+                      <p>{ticket.resolutionNotes}</p>
+                    </div>
+                  )}
+
+                  <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                </article>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
