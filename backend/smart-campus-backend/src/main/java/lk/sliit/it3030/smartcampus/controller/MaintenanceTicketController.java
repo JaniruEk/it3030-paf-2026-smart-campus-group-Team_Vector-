@@ -3,6 +3,7 @@ package lk.sliit.it3030.smartcampus.controller;
 import jakarta.validation.Valid;
 import lk.sliit.it3030.smartcampus.dto.AssignTechnicianRequest;
 import lk.sliit.it3030.smartcampus.dto.CreateMaintenanceTicketRequest;
+import lk.sliit.it3030.smartcampus.dto.TechnicianTicketMessageRequest;
 import lk.sliit.it3030.smartcampus.dto.UpdateTicketStatusRequest;
 import lk.sliit.it3030.smartcampus.model.MaintenanceTicket;
 import lk.sliit.it3030.smartcampus.service.MaintenanceTicketService;
@@ -102,6 +103,65 @@ public class MaintenanceTicketController {
                     ticketId,
                     request.getStatus(),
                     request.getReason()
+            );
+            return ResponseEntity.ok(updatedTicket);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/technician/assigned")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<List<MaintenanceTicket>> getAssignedTicketsForTechnician(Authentication authentication) {
+        try {
+            String technicianId = authentication.getName();
+            return ResponseEntity.ok(maintenanceTicketService.getAssignedTicketsForTechnician(technicianId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/{ticketId}/technician-message")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<?> addTechnicianMessage(@PathVariable String ticketId,
+                                                  @RequestBody TechnicianTicketMessageRequest request,
+                                                  Authentication authentication) {
+        try {
+            String technicianId = authentication.getName();
+            MaintenanceTicket updatedTicket = maintenanceTicketService.addTechnicianMessage(
+                    ticketId,
+                    technicianId,
+                    request
+            );
+            return ResponseEntity.ok(updatedTicket);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PatchMapping("/{ticketId}/technician-status")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<?> updateTicketStatusByTechnician(@PathVariable String ticketId,
+                                                            @Valid @RequestBody UpdateTicketStatusRequest request,
+                                                            Authentication authentication) {
+        try {
+            String technicianId = authentication.getName();
+            MaintenanceTicket updatedTicket = maintenanceTicketService.updateTicketStatusByTechnician(
+                    ticketId,
+                    technicianId,
+                    request.getStatus()
             );
             return ResponseEntity.ok(updatedTicket);
         } catch (NoSuchElementException e) {

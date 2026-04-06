@@ -11,6 +11,17 @@ export interface TicketAttachment {
   dataUrl: string;
 }
 
+export interface TicketMessage {
+  senderId: string;
+  senderRole: string;
+  senderEmail?: string;
+  message?: string;
+  imageDataUrl?: string;
+  imageFileName?: string;
+  imageContentType?: string;
+  createdAt?: string;
+}
+
 export interface MaintenanceTicket {
   id: string;
   userId: string;
@@ -29,6 +40,7 @@ export interface MaintenanceTicket {
   preferredContactDetails: string;
   preferredContactMethod?: string;
   attachments: TicketAttachment[];
+  ticketMessages?: TicketMessage[];
   createdAt?: string;
   updatedAt?: string;
 }

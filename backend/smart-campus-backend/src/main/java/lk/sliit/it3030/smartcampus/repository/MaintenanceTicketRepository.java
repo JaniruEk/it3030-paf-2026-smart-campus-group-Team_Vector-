@@ -82,4 +82,24 @@ public class MaintenanceTicketRepository {
 
         return tickets;
     }
+
+    public List<MaintenanceTicket> findByAssignedTechnicianId(String technicianId) throws ExecutionException, InterruptedException {
+        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
+                .whereEqualTo("assignedTechnicianId", technicianId)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+        List<MaintenanceTicket> tickets = new ArrayList<>();
+        for (DocumentSnapshot document : documents) {
+            MaintenanceTicket ticket = document.toObject(MaintenanceTicket.class);
+            if (ticket != null) {
+                tickets.add(ticket);
+            }
+        }
+
+        tickets.sort(Comparator.comparing(MaintenanceTicket::getUpdatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+
+        return tickets;
+    }
 }

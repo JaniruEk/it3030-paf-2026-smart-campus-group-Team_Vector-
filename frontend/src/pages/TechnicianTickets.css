@@ -1,0 +1,267 @@
+.technician-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding: 1.5rem;
+  color: #1e293b;
+}
+
+.technician-header {
+  max-width: 1100px;
+  margin: 0 auto 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.technician-header h2 {
+  margin: 0;
+}
+
+.technician-header p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+}
+
+.technician-state-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.technician-ticket-list {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.technician-ticket-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.technician-ticket-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.technician-ticket-head h3 {
+  margin: 0;
+}
+
+.status-pill {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.3rem 0.7rem;
+}
+
+.status-open {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-in_progress {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-resolved {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.status-closed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.technician-status-actions {
+  margin-top: 0.75rem;
+}
+
+.status-action-btn {
+  border: none;
+  background: #0f766e;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.status-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ticket-message-history {
+  margin-top: 0.9rem;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 0.8rem;
+}
+
+.ticket-message-history h4 {
+  margin: 0 0 0.6rem;
+}
+
+.message-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.message-item {
+  border: 1px solid #dbe5ef;
+  border-radius: 8px;
+  padding: 0.65rem;
+  background: #f8fafc;
+}
+
+.message-item p {
+  margin: 0.4rem 0 0;
+  white-space: pre-wrap;
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.message-image-link {
+  width: 110px;
+  height: 110px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.message-image-link img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-updates {
+  margin: 0;
+  color: #64748b;
+}
+
+.update-blocked-note {
+  margin: 0.9rem 0 0;
+  color: #b91c1c;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.ticket-update-form {
+  margin-top: 0.9rem;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 0.9rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ticket-update-form textarea,
+.ticket-update-form input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.65rem;
+  font-size: 0.92rem;
+}
+
+.ticket-update-form textarea {
+  resize: vertical;
+}
+
+.image-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.clear-image-btn {
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.picked-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.picked-image-preview img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.picked-image-preview span {
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.send-update-btn {
+  border: none;
+  background: #0284c7;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.send-update-btn:disabled,
+.clear-image-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 860px) {
+  .technician-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .technician-ticket-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .image-picker-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

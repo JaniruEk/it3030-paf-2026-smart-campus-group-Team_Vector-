@@ -1,6 +1,7 @@
 package lk.sliit.it3030.smartcampus.service;
 
 import lk.sliit.it3030.smartcampus.dto.CreateMaintenanceTicketRequest;
+import lk.sliit.it3030.smartcampus.dto.TechnicianTicketMessageRequest;
 import lk.sliit.it3030.smartcampus.model.MaintenanceTicket;
 import lk.sliit.it3030.smartcampus.repository.MaintenanceTicketRepository;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,98 @@ public class MaintenanceTicketService {
 
     public List<MaintenanceTicket> getAllTicketsForAdmin() throws ExecutionException, InterruptedException {
         return maintenanceTicketRepository.findAll();
+    }
+
+    public List<MaintenanceTicket> getAssignedTicketsForTechnician(String technicianId)
+            throws ExecutionException, InterruptedException {
+        return maintenanceTicketRepository.findByAssignedTechnicianId(technicianId);
+    }
+
+    public MaintenanceTicket addTechnicianMessage(String ticketId,
+                                                  String technicianId,
+                                                  TechnicianTicketMessageRequest request)
+            throws ExecutionException, InterruptedException {
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+
+        String assignedTechId = trimToNull(ticket.getAssignedTechnicianId());
+        if (assignedTechId == null || !assignedTechId.equals(technicianId)) {
+            throw new IllegalArgumentException("You are not assigned to this ticket");
+        }
+
+        String currentStatus = ticket.getStatus() == null ? "OPEN" : ticket.getStatus().toUpperCase(Locale.ROOT);
+        if ("REJECTED".equals(currentStatus) || "CLOSED".equals(currentStatus)) {
+            throw new IllegalArgumentException("Cannot update a closed or rejected ticket");
+        }
+
+        String message = trimToNull(request.getMessage());
+        String imageDataUrl = trimToNull(request.getImageDataUrl());
+        if (message == null && imageDataUrl == null) {
+            throw new IllegalArgumentException("Message or image is required");
+        }
+
+        if (imageDataUrl != null && !imageDataUrl.startsWith("data:image/")) {
+            throw new IllegalArgumentException("Only image attachments are allowed for technician updates");
+        }
+
+        if (ticket.getTicketMessages() == null) {
+            ticket.setTicketMessages(new java.util.ArrayList<>());
+        }
+
+        MaintenanceTicket.TicketMessage ticketMessage = new MaintenanceTicket.TicketMessage(
+                technicianId,
+                "TECHNICIAN",
+                trimToNull(request.getSenderEmail()),
+                message,
+                imageDataUrl,
+                trimToNull(request.getImageFileName()),
+                trimToNull(request.getImageContentType()),
+                new Date()
+        );
+
+        ticket.getTicketMessages().add(ticketMessage);
+        ticket.setUpdatedAt(new Date());
+
+        maintenanceTicketRepository.save(ticket);
+        return ticket;
+    }
+
+    public MaintenanceTicket updateTicketStatusByTechnician(String ticketId,
+                                                            String technicianId,
+                                                            String targetStatus)
+            throws ExecutionException, InterruptedException {
+        if (targetStatus == null || targetStatus.isBlank()) {
+            throw new IllegalArgumentException("Status is required");
+        }
+
+        String normalizedTarget = targetStatus.trim().toUpperCase(Locale.ROOT);
+        if (!"IN_PROGRESS".equals(normalizedTarget) && !"RESOLVED".equals(normalizedTarget)) {
+            throw new IllegalArgumentException("Technician can only set status to IN_PROGRESS or RESOLVED");
+        }
+
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+
+        String assignedTechId = trimToNull(ticket.getAssignedTechnicianId());
+        if (assignedTechId == null || !assignedTechId.equals(technicianId)) {
+            throw new IllegalArgumentException("You are not assigned to this ticket");
+        }
+
+        String currentStatus = ticket.getStatus() == null ? "OPEN" : ticket.getStatus().toUpperCase(Locale.ROOT);
+        if ("REJECTED".equals(currentStatus) || "CLOSED".equals(currentStatus)) {
+            throw new IllegalArgumentException("Cannot update status of a closed or rejected ticket");
+        }
+
+        boolean validTransition =
+                ("IN_PROGRESS".equals(currentStatus) && "RESOLVED".equals(normalizedTarget))
+                        || ("RESOLVED".equals(currentStatus) && "IN_PROGRESS".equals(normalizedTarget));
+
+        if (!validTransition) {
+            throw new IllegalArgumentException("Technician can only resolve IN_PROGRESS tickets or reopen RESOLVED tickets to IN_PROGRESS");
+        }
+
+        ticket.setStatus(normalizedTarget);
+        ticket.setUpdatedAt(new Date());
+        maintenanceTicketRepository.save(ticket);
+        return ticket;
     }
 
     public MaintenanceTicket assignTechnician(String ticketId, String technicianId, String technicianEmail)

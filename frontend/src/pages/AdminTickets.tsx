@@ -230,6 +230,9 @@ const AdminTickets = () => {
             const isOpen = status === 'OPEN';
             const priority = normalizePriority(ticket.priority);
             const requesterEmail = getRequestedByEmail(ticket.userId);
+            const technicianUpdates = (ticket.ticketMessages || []).filter(
+              (message) => (message.senderRole || '').toUpperCase() === 'TECHNICIAN',
+            );
 
             return (
               <article className="admin-ticket-card" key={ticketId}>
@@ -271,6 +274,36 @@ const AdminTickets = () => {
                       <strong>Assigned Technician:</strong>{' '}
                       {ticket.assignedTechnicianEmail || ticket.assignedTechnicianId || 'Not assigned'}
                     </p>
+
+                    <div className="ticket-updates-block">
+                      <strong>Technician Updates:</strong>
+                      {technicianUpdates.length > 0 ? (
+                        <div className="ticket-update-list">
+                          {technicianUpdates.map((update, index) => (
+                            <div className="ticket-update-item" key={`${ticketId}-tech-update-${index}`}>
+                              <div className="ticket-update-meta">
+                                <span>{update.senderEmail || ticket.assignedTechnicianEmail || 'Technician'}</span>
+                                <span>{formatDate(update.createdAt)}</span>
+                              </div>
+                              {update.message ? <p>{update.message}</p> : null}
+                              {update.imageDataUrl ? (
+                                <a
+                                  href={update.imageDataUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="ticket-update-image-link"
+                                  title={update.imageFileName || 'Technician update image'}
+                                >
+                                  <img src={update.imageDataUrl} alt={update.imageFileName || 'Technician update image'} />
+                                </a>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="no-ticket-updates">No technician updates yet</span>
+                      )}
+                    </div>
                   </div>
 
                   <aside className="admin-ticket-side">

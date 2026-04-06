@@ -9,6 +9,9 @@ const Dashboard: React.FC = () => {
     const { currentUser, userRole, logout } = useAuth();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
+    const ticketActionPath = userRole === 'TECHNICIAN' ? '/technician/tickets' : '/tickets';
+    const ticketActionLabel = userRole === 'TECHNICIAN' ? 'Manage Assigned Tickets' : 'Manage My Tickets';
+
     // If user is Admin, go directly to the admin area instead of showing the user dashboard
     if (userRole === 'ADMIN') {
         return <Navigate to="/admin" replace />;
@@ -39,7 +42,7 @@ const Dashboard: React.FC = () => {
                     <h1>Welcome back!</h1>
                     <p>You have successfully logged in using Firebase Auth. Your current assigned role is: <strong>{userRole || 'USER'}</strong></p>
                     <div className="dashboard-actions">
-                        <Link to="/tickets" className="dashboard-action-link">Manage My Tickets</Link>
+                        <Link to={ticketActionPath} className="dashboard-action-link">{ticketActionLabel}</Link>
                     </div>
                 </div>
             </main>

@@ -32,6 +32,8 @@ public class MaintenanceTicket {
     private String preferredContactMethod;
     @Builder.Default
     private List<ImageAttachment> attachments = new ArrayList<>();
+    @Builder.Default
+    private List<TicketMessage> ticketMessages = new ArrayList<>();
     private Date createdAt;
     private Date updatedAt;
 
@@ -42,5 +44,19 @@ public class MaintenanceTicket {
         private String fileName;
         private String contentType;
         private String dataUrl;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TicketMessage {
+        private String senderId;
+        private String senderRole;
+        private String senderEmail;
+        private String message;
+        private String imageDataUrl;
+        private String imageFileName;
+        private String imageContentType;
+        private Date createdAt;
     }
 }
