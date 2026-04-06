@@ -40,33 +40,44 @@ public class NotificationController {
         }
     }
 
+    private static final java.util.concurrent.ConcurrentHashMap<String, Long> broadcastHistory = new java.util.concurrent.ConcurrentHashMap<>();
+
     @PostMapping("/broadcast")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> broadcastSystemNotification(@RequestBody Map<String, String> request, Authentication auth) {
         try {
             String message = request.get("message");
-            String targetRole = request.getOrDefault("role", "ALL").trim();
+            String targetRole = request.getOrDefault("role", "ALL").trim().toUpperCase();
+            String adminId = auth.getName();
             
-            System.out.println("Processing broadcast: target=" + targetRole + ", message=" + message);
+            // 1. Simple Idempotency Guard (5-second window for same message from same admin)
+            String broadcastKey = adminId + ":" + targetRole + ":" + message.hashCode();
+            long now = System.currentTimeMillis();
+            if (broadcastHistory.containsKey(broadcastKey) && (now - broadcastHistory.get(broadcastKey) < 5000)) {
+                System.out.println("Ignoring duplicate broadcast request from " + adminId);
+                return ResponseEntity.ok("Broadcast already processed.");
+            }
+            broadcastHistory.put(broadcastKey, now);
+
+            System.out.println("Processing optimized broadcast: target=" + targetRole + ", from=" + adminId);
             
             ListUsersPage page = FirebaseAuth.getInstance().listUsers(null);
-            int totalProcessed = 0;
-            int matchCount = 0;
+            java.util.List<String> matchUids = new java.util.ArrayList<>();
             
             for (ExportedUserRecord user : page.iterateAll()) {
-                totalProcessed++;
                 String userRole = "USER";
                 Map<String, Object> claims = user.getCustomClaims();
-                if (claims != null && claims.containsKey("role") && claims.get("role") != null) {
+                if (claims != null && claims.get("role") != null) {
                     userRole = (String) claims.get("role");
                 }
                 
-                if (targetRole.equalsIgnoreCase("ALL") || targetRole.equalsIgnoreCase(userRole)) {
-                    notificationService.createNotification(user.getUid(), message, "BROADCAST");
-                    matchCount++;
+                if (targetRole.equals("ALL") || targetRole.equals(userRole.toUpperCase())) {
+                    matchUids.add(user.getUid());
                 }
             }
-            System.out.println("Broadcast summary: Total users scanned=" + totalProcessed + ", Notifications created=" + matchCount);
+
+            // 2. Perform Topic-based Broadcast + Background Persistence
+            notificationService.broadcastToRole(message, targetRole, matchUids);
 
             String performedBy = auth.getName();
             try {
@@ -82,7 +93,7 @@ public class NotificationController {
                         .timestamp(new java.util.Date())
                         .build());
                         
-            return ResponseEntity.status(HttpStatus.CREATED).body("Broadcast sent to " + matchCount + " users.");
+            return ResponseEntity.status(HttpStatus.CREATED).body("Broadcast dispatched to " + matchUids.size() + " users.");
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed to send broadcast: " + e.getMessage());

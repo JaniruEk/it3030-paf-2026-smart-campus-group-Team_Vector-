@@ -44,6 +44,57 @@ public class NotificationService {
         return notification;
     }
 
+    /**
+     * Broadcasts a notification to a specific role/group.
+     * Uses a single WebSocket message for real-time delivery and saves individually for persistence in background.
+     */
+    public void broadcastToRole(String message, String targetRole, List<String> recipientIds) {
+        // 1. Send one real-time message to the group topic
+        Notification broadcastTemplate = Notification.builder()
+                .id("bc-" + System.currentTimeMillis())
+                .message(message)
+                .type("BROADCAST")
+                .isRead(false)
+                .createdAt(new Date())
+                .build();
+        
+        String topic = "/topic/broadcasts/" + targetRole.toUpperCase();
+        messagingTemplate.convertAndSend(topic, broadcastTemplate);
+
+        // 2. Persistent storage in background to avoid blocking the broadcast request
+        new Thread(() -> {
+            try {
+                WriteBatch batch = firestore.batch();
+                int count = 0;
+                for (String uid : recipientIds) {
+                    String id = UUID.randomUUID().toString();
+                    Notification n = Notification.builder()
+                            .id(id)
+                            .recipientId(uid)
+                            .message(message)
+                            .type("BROADCAST")
+                            .isRead(false)
+                            .createdAt(new Date())
+                            .build();
+                    batch.set(firestore.collection(COLLECTION_NAME).document(id), n);
+                    count++;
+                    
+                    // Firestore batches have 500 operation limit
+                    if (count >= 450) {
+                        batch.commit().get();
+                        batch = firestore.batch();
+                        count = 0;
+                    }
+                }
+                if (count > 0) {
+                    batch.commit().get();
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to complete background broadcast persistence: " + e.getMessage());
+            }
+        }).start();
+    }
+
     public List<Notification> getNotificationsForUser(String userId) throws ExecutionException, InterruptedException {
         ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
                 .whereEqualTo("recipientId", userId)

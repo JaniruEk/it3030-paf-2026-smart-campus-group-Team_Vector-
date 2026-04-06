@@ -4,7 +4,8 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { createTicket, getResources } from '../services/ticketService';
 import type { CreateTicketPayload, Resource, TicketAttachment } from '../types/ticket';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, MapPin, Box } from 'lucide-react';
+import './CreateTicketModal.css';
 
 interface CreateTicketModalProps {
   onClose: () => void;
@@ -13,7 +14,6 @@ interface CreateTicketModalProps {
 
 const CATEGORY_OPTIONS = ['ELECTRICAL', 'PLUMBING', 'CLEANING', 'IT_SUPPORT', 'FURNITURE', 'SECURITY', 'OTHER'];
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
-const CONTACT_METHOD_OPTIONS = ['EMAIL', 'PHONE', 'WHATSAPP', 'ANY'];
 const MAX_ATTACHMENTS = 3;
 
 const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreated }) => {
@@ -104,44 +104,42 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
   };
 
   return (
-    <div className="audit-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
-      <div className="audit-modal-content" style={{ width: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="audit-modal-overlay">
+      <div className="audit-modal-content">
+        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ margin: 0, color: '#0f172a' }}>Report New Incident</h2>
-            <p style={{ margin: '0.25rem 0 0 0', color: '#64748b' }}>Provide details about the maintenance issue.</p>
+            <h2>Report New Incident</h2>
+            <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.9rem' }}>Provide details about the maintenance issue.</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '0.5rem', borderRadius: '50%' }}>
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="broadcast-form-section">
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+        <form onSubmit={handleSubmit}>
+          <div className="create-ticket-tabs">
             <button 
                 type="button"
                 className={`tab-btn ${mode === 'RESOURCE' ? 'active' : ''}`}
                 onClick={() => setMode('RESOURCE')}
-                style={{ flex: 1, padding: '0.75rem' }}
             >
-                Specific Asset/Resource
+                <Box size={18} /> Specific Asset
             </button>
             <button 
                 type="button"
                 className={`tab-btn ${mode === 'LOCATION' ? 'active' : ''}`}
                 onClick={() => setMode('LOCATION')}
-                style={{ flex: 1, padding: '0.75rem' }}
             >
-                General Location
+                <MapPin size={18} /> General Location
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <div className="form-grid">
              {mode === 'RESOURCE' ? (
-                 <section>
+                 <section className="form-section">
                     <label className="preview-label">Campus Asset</label>
                     <select 
-                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                        className="form-select"
                         value={formData.resourceId}
                         onChange={(e) => {
                             const res = resources.find(r => r.id === e.target.value);
@@ -153,22 +151,22 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                     </select>
                  </section>
              ) : (
-                 <section>
+                 <section className="form-section">
                     <label className="preview-label">Location</label>
                     <input 
                         type="text"
+                        className="form-input"
                         placeholder="e.g. Library 2nd Floor"
-                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
                         value={formData.location}
                         onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                     />
                  </section>
              )}
 
-             <section>
+             <section className="form-section">
                 <label className="preview-label">Category</label>
                 <select 
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                    className="form-select"
                     value={formData.category}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                 >
@@ -177,50 +175,45 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
              </section>
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div className="form-section" style={{ marginBottom: '1.5rem' }}>
             <label className="preview-label">Issue Description</label>
-            <div className="broadcast-textarea-wrapper">
-                <textarea 
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the issue in detail..."
-                    style={{ minHeight: '120px' }}
-                />
-            </div>
+            <textarea 
+                className="form-textarea"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe the issue in detail..."
+                style={{ minHeight: '100px' }}
+            />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-             <section>
+          <div className="form-grid">
+             <section className="form-section">
                 <label className="preview-label">Priority Level</label>
-                <div className="audience-selector" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                <div className="priority-selector">
                     {PRIORITY_OPTIONS.map(p => (
-                        <label key={p} className="role-option" style={{ padding: '0.5rem' }}>
+                        <label key={p} className="priority-option">
                             <input 
                                 type="radio" 
                                 name="priority" 
                                 checked={formData.priority === p}
                                 onChange={() => setFormData(prev => ({ ...prev, priority: p }))}
                             />
-                            <div className="role-card" style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{p}</div>
+                            <div className="priority-card">{p}</div>
                         </label>
                     ))}
                 </div>
              </section>
 
-             <section>
+             <section className="form-section">
                 <label className="preview-label">Upload Evidence (Max 3)</label>
-                <label style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                    padding: '1rem', border: '2px dashed #e2e8f0', borderRadius: '8px', cursor: 'pointer',
-                    color: '#64748b'
-                }}>
+                <label className="upload-zone">
                     <Upload size={20} />
                     <span>Select Images</span>
                     <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
                 </label>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                <div className="attachment-preview-strip">
                     {formData.attachments.map((a, i) => (
-                        <img key={i} src={a.dataUrl} alt="preview" style={{ width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover' }} />
+                        <img key={i} src={a.dataUrl} alt="preview" className="attachment-thumbnail" />
                     ))}
                 </div>
              </section>
@@ -228,11 +221,10 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
 
           <button 
             type="submit" 
-            className="send-broadcast-btn pulse-glowing" 
+            className="submit-btn" 
             disabled={isSubmitting}
-            style={{ width: '100%' }}
           >
-            {isSubmitting ? 'Reporting...' : 'SUBMIT INCIDENT REPORT'}
+            {isSubmitting ? 'REPORTING INCIDENT...' : 'SUBMIT INCIDENT REPORT'}
           </button>
         </form>
       </div>
