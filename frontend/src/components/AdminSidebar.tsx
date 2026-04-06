@@ -1,21 +1,30 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Database, ShieldAlert, ChevronLeft, ChevronRight, LogOut, ClipboardList } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
 interface AdminSidebarProps {
-    activeTab: 'overview' | 'audit' | 'broadcast';
-    setActiveTab: (tab: 'overview' | 'audit' | 'broadcast') => void;
+    activeTab?: 'overview' | 'audit' | 'broadcast';
+    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast') => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { currentUser, logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
     const isTicketsActive = location.pathname === '/admin/tickets';
+
+    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast') => {
+        if (location.pathname !== '/admin') {
+            navigate(`/admin?tab=${tab}`);
+        } else {
+            setActiveTab?.(tab);
+        }
+    };
 
     return (
         <div className={`admin-tabs ${isCollapsed ? 'collapsed' : ''}`}>
@@ -54,13 +63,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
                 )}
             </div>
 
-            <button className={`tab-btn ${activeTab === 'overview' && !isTicketsActive ? 'active' : ''}`} onClick={() => setActiveTab('overview')} title="System Overview">
+            <button className={`tab-btn ${activeTab === 'overview' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('overview')} title="System Overview">
                 <ShieldCheck size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>System Overview</span>}
             </button>
-            <button className={`tab-btn ${activeTab === 'audit' && !isTicketsActive ? 'active' : ''}`} onClick={() => setActiveTab('audit')} title="Audit Logs">
+            <button className={`tab-btn ${activeTab === 'audit' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('audit')} title="Audit Logs">
                 <Database size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Audit Logs</span>}
             </button>
-            <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => setActiveTab('broadcast')} title="Global Broadcast">
+            <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
                 <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
             </button>
             <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">

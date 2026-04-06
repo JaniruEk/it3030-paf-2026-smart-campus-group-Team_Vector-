@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import apiClient from '../api/apiClient';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
+import AdminSidebar from '../components/AdminSidebar';
+import NotificationBell from '../components/NotificationBell';
+import { ShieldAlert, CheckCircle } from 'lucide-react';
 import './AdminTickets.css';
+import './AdminDashboard.css';
 
 interface UserData {
   uid: string;
@@ -23,16 +26,9 @@ const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
 type TicketPriority = typeof PRIORITY_OPTIONS[number];
 
 const formatDate = (value?: string) => {
-  if (!value) {
-    return 'N/A';
-  }
-
+  if (!value) return 'N/A';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'N/A';
-  }
-
-  return date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
 };
 
 const getErrorMessage = (error: unknown) => {
@@ -45,20 +41,14 @@ const getErrorMessage = (error: unknown) => {
 
 const normalizeStatus = (status?: string): TicketDisplayStatus => {
   const normalized = (status || 'OPEN').toUpperCase();
-  if (normalized === 'REJECTED') {
-    return 'REJECTED';
-  }
-  if (STATUS_OPTIONS.includes(normalized as TicketStatusOption)) {
-    return normalized as TicketStatusOption;
-  }
+  if (normalized === 'REJECTED') return 'REJECTED';
+  if (STATUS_OPTIONS.includes(normalized as TicketStatusOption)) return normalized as TicketStatusOption;
   return 'OPEN';
 };
 
 const normalizePriority = (priority?: string): TicketPriority => {
   const normalized = (priority || 'MEDIUM').toUpperCase();
-  if (PRIORITY_OPTIONS.includes(normalized as TicketPriority)) {
-    return normalized as TicketPriority;
-  }
+  if (PRIORITY_OPTIONS.includes(normalized as TicketPriority)) return normalized as TicketPriority;
   return 'MEDIUM';
 };
 
@@ -85,10 +75,9 @@ const AdminTickets = () => {
         apiClient.get<MaintenanceTicket[]>('/tickets/admin/all'),
         apiClient.get<UserData[]>('/users'),
       ]);
-
       setTickets(ticketRes.data);
-  setUsers(usersRes.data);
-  setTechnicians(usersRes.data.filter((user) => user.role === 'TECHNICIAN' && !user.disabled));
+      setUsers(usersRes.data);
+      setTechnicians(usersRes.data.filter((user) => user.role === 'TECHNICIAN' && !user.disabled));
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -102,20 +91,13 @@ const AdminTickets = () => {
 
   const getRequestedByEmail = (userId: string) => {
     const user = users.find((item) => item.uid === userId);
-    if (!user) {
-      return userId;
-    }
-
-    return user.email;
+    return user ? user.email : userId;
   };
 
   const handleAssignTechnician = async (ticket: MaintenanceTicket, event: FormEvent) => {
     event.preventDefault();
-
     const ticketId = ticket.id;
-    if (!ticketId) {
-      return;
-    }
+    if (!ticketId) return;
 
     const technicianId = selectedTechByTicket[ticketId];
     if (!technicianId) {
@@ -135,10 +117,8 @@ const AdminTickets = () => {
         technicianId: selectedTechnician.uid,
         technicianEmail: selectedTechnician.email,
       });
-
-      // Backend automatically sets status to IN_PROGRESS when assigning technician.
       setTickets((prev) => prev.map((item) => (item.id === ticketId ? response.data : item)));
-      toast.success('Technician assigned. Ticket moved to IN_PROGRESS');
+      toast.success('Technician assigned successfully');
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -149,12 +129,9 @@ const AdminTickets = () => {
   const handleStatusChange = async (ticketId: string, status: TicketStatusOption) => {
     try {
       setActionTicketId(ticketId);
-      const response = await apiClient.patch<MaintenanceTicket>(`/tickets/${ticketId}/status`, {
-        status,
-      });
-
+      const response = await apiClient.patch<MaintenanceTicket>(`/tickets/${ticketId}/status`, { status });
       setTickets((prev) => prev.map((item) => (item.id === ticketId ? response.data : item)));
-      toast.success(`Ticket status updated to ${status}`);
+      toast.success(`Status updated to ${status}`);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -171,27 +148,17 @@ const AdminTickets = () => {
       toast.error('Only OPEN tickets can be rejected.');
       return;
     }
-
     const reason = window.prompt('Please enter a reason to reject this ticket:');
-    if (reason === null) {
-      return;
-    }
-
-    const trimmedReason = reason.trim();
-    if (!trimmedReason) {
-      toast.error('Reject reason is required.');
-      return;
-    }
+    if (!reason?.trim()) return;
 
     try {
       setActionTicketId(ticketId);
       const response = await apiClient.patch<MaintenanceTicket>(`/tickets/${ticketId}/status`, {
         status: 'REJECTED',
-        reason: trimmedReason,
+        reason: reason.trim(),
       });
-
       setTickets((prev) => prev.map((item) => (item.id === ticketId ? response.data : item)));
-      toast.success('Ticket rejected successfully');
+      toast.success('Ticket rejected');
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -200,192 +167,165 @@ const AdminTickets = () => {
   };
 
   return (
-    <div className="admin-tickets-page">
-      <header className="admin-tickets-header">
-        <div>
-          <h2>Admin Ticket Management</h2>
-          <p>View all tickets, assign technicians, and update status from the dropdown.</p>
-        </div>
-        <Link to="/admin" className="admin-back-link">Back to Admin Dashboard</Link>
-      </header>
+    <div className="admin-dashboard-layout">
+      <AdminSidebar activeTab={undefined} setActiveTab={undefined} />
+      
+      <div className="admin-main">
+        <header className="dashboard-header" style={{ margin: '-2rem -2rem 2rem -2rem' }}>
+          <h2>Smart Campus Operations Hub</h2>
+          <div className="header-actions">
+            <div className="admin-badge" style={{ marginRight: '1rem' }}>
+              <ShieldAlert size={16} /> Secure Admin Area
+            </div>
+            <NotificationBell />
+          </div>
+        </header>
 
-      <section className="admin-ticket-stats">
-        <div><strong>Total:</strong> {tickets.length}</div>
-        <div><strong>OPEN:</strong> {ticketCountByStatus.OPEN || 0}</div>
-        <div><strong>IN_PROGRESS:</strong> {ticketCountByStatus.IN_PROGRESS || 0}</div>
-        <div><strong>RESOLVED:</strong> {ticketCountByStatus.RESOLVED || 0}</div>
-        <div><strong>CLOSED:</strong> {ticketCountByStatus.CLOSED || 0}</div>
-        <div><strong>REJECTED:</strong> {ticketCountByStatus.REJECTED || 0}</div>
-      </section>
+        <div className="admin-content">
+          <div className="admin-card">
+            <div className="card-header">
+              <h3>Maintenance Ticket Management</h3>
+              <p>Oversee campus-wide incidents, assign personnel, and monitor resolutions.</p>
+            </div>
 
-      {isLoading ? (
-        <div className="admin-ticket-loading">Loading all tickets...</div>
-      ) : tickets.length === 0 ? (
-        <div className="admin-ticket-empty">No tickets found.</div>
-      ) : (
-        <div className="admin-ticket-list">
-          {tickets.map((ticket) => {
-            const ticketId = ticket.id;
-            if (!ticketId) {
-              return null;
-            }
+            <div className="health-dashboard" style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+              <div className="health-stat-card">
+                <span className="health-stat-title">Total Tickets</span>
+                <span className="health-stat-value">{tickets.length}</span>
+              </div>
+              <div className="health-stat-card">
+                <span className="health-stat-title">Open</span>
+                <span className="health-stat-value warning">{ticketCountByStatus.OPEN || 0}</span>
+              </div>
+              <div className="health-stat-card">
+                <span className="health-stat-title">In Progress</span>
+                <span className="health-stat-value ok" style={{ color: '#3b82f6' }}>{ticketCountByStatus.IN_PROGRESS || 0}</span>
+              </div>
+              <div className="health-stat-card">
+                <span className="health-stat-title">Resolved</span>
+                <span className="health-stat-value ok">{ticketCountByStatus.RESOLVED || 0}</span>
+              </div>
+            </div>
 
-            const status = normalizeStatus(ticket.status);
-            const isRejected = status === 'REJECTED';
-            const isOpen = status === 'OPEN';
-            const priority = normalizePriority(ticket.priority);
-            const requesterEmail = getRequestedByEmail(ticket.userId);
-            const technicianUpdates = (ticket.ticketMessages || []).filter(
-              (message) => (message.senderRole || '').toUpperCase() === 'TECHNICIAN',
-            );
+            <div style={{ padding: '2rem' }}>
+              {isLoading ? (
+                <div className="loading-state">Accessing secure ticket database...</div>
+              ) : tickets.length === 0 ? (
+                <div className="empty-state">No tickets registered in the system.</div>
+              ) : (
+                <div className="admin-ticket-list">
+                  {tickets.map((ticket) => {
+                    const ticketId = ticket.id!;
+                    const status = normalizeStatus(ticket.status);
+                    const priority = normalizePriority(ticket.priority);
+                    const isRejected = status === 'REJECTED';
+                    const isOpen = status === 'OPEN';
 
-            return (
-              <article className="admin-ticket-card" key={ticketId}>
-                <div className="admin-ticket-card-head">
-                  <h3>{ticket.category} Issue</h3>
-                  <div className={`ticket-priority-pill priority-${priority.toLowerCase()}`}>{priority}</div>
-                  {isRejected ? (
-                    <span className="ticket-status-pill status-rejected">REJECTED</span>
-                  ) : (
-                    <div className="status-control">
-                      <label htmlFor={`status-${ticketId}`}>Status</label>
-                      <select
-                        id={`status-${ticketId}`}
-                        className={`ticket-status-select status-${status.toLowerCase()}`}
-                        value={status}
-                        onChange={(event) => handleStatusChange(ticketId, event.target.value as TicketStatusOption)}
-                        disabled={actionTicketId === ticketId}
-                      >
-                        {STATUS_OPTIONS.map((option) => (
-                          <option key={option} value={option}>{option}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                <div className="admin-ticket-card-body">
-                  <div className="admin-ticket-main">
-                    <p><strong>Created:</strong> {formatDate(ticket.createdAt)}</p>
-                    <p><strong>Requested By:</strong> {requesterEmail}</p>
-                    <p>
-                      <strong>Resource / Location:</strong> {ticket.resourceName || ticket.location}
-                    </p>
-                    <p><strong>Description:</strong> {ticket.description}</p>
-                    <p>
-                      <strong>Preferred Contact:</strong> {ticket.preferredContactMethod || 'ANY'} - {ticket.preferredContactDetails || 'N/A'}
-                    </p>
-                    <p>
-                      <strong>Assigned Technician:</strong>{' '}
-                      {ticket.assignedTechnicianEmail || ticket.assignedTechnicianId || 'Not assigned'}
-                    </p>
-
-                    <div className="ticket-updates-block">
-                      <strong>Technician Updates:</strong>
-                      {technicianUpdates.length > 0 ? (
-                        <div className="ticket-update-list">
-                          {technicianUpdates.map((update, index) => (
-                            <div className="ticket-update-item" key={`${ticketId}-tech-update-${index}`}>
-                              <div className="ticket-update-meta">
-                                <span>{update.senderEmail || ticket.assignedTechnicianEmail || 'Technician'}</span>
-                                <span>{formatDate(update.createdAt)}</span>
-                              </div>
-                              {update.message ? <p>{update.message}</p> : null}
-                              {update.imageDataUrl ? (
-                                <a
-                                  href={update.imageDataUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="ticket-update-image-link"
-                                  title={update.imageFileName || 'Technician update image'}
-                                >
-                                  <img src={update.imageDataUrl} alt={update.imageFileName || 'Technician update image'} />
-                                </a>
-                              ) : null}
+                    return (
+                      <article className="admin-ticket-card" key={ticketId}>
+                        <div className="admin-ticket-card-head">
+                          <div className="ticket-title-group">
+                            <h3>{ticket.category} Issue</h3>
+                            <div className="badge-row">
+                              <span className={`status-pill status-${status.toLowerCase()}`}>{status}</span>
+                              <span className={`priority-pill priority-${priority.toLowerCase()}`}>{priority}</span>
                             </div>
-                          ))}
+                          </div>
+                          
+                          {!isRejected && (
+                            <div className="status-control">
+                              <label>Update Status</label>
+                              <select
+                                className={`ticket-status-select`}
+                                value={status}
+                                onChange={(e) => handleStatusChange(ticketId, e.target.value as TicketStatusOption)}
+                                disabled={actionTicketId === ticketId || status === 'CLOSED'}
+                              >
+                                {STATUS_OPTIONS.map((opt) => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <span className="no-ticket-updates">No technician updates yet</span>
-                      )}
-                    </div>
-                  </div>
 
-                  <aside className="admin-ticket-side">
-                    <div className="ticket-attachments-block">
-                      <strong>Attachments:</strong>
-                      {ticket.attachments && ticket.attachments.length > 0 ? (
-                        <div className="ticket-image-grid">
-                          {ticket.attachments.map((attachment, index) => (
-                            <a
-                              key={`${ticketId}-${attachment.fileName}-${index}`}
-                              href={attachment.dataUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="ticket-image-link"
-                              title={attachment.fileName}
-                            >
-                              <img src={attachment.dataUrl} alt={attachment.fileName} />
-                            </a>
-                          ))}
+                        <div className="admin-ticket-grid">
+                          <div className="ticket-info-main">
+                            <div className="info-row">
+                              <div className="info-item">
+                                <label>Requester</label>
+                                <span>{getRequestedByEmail(ticket.userId)}</span>
+                              </div>
+                              <div className="info-item">
+                                <label>Location</label>
+                                <span>{ticket.resourceName || ticket.location}</span>
+                              </div>
+                            </div>
+                            <div className="info-item full">
+                              <label>Description</label>
+                              <p>{ticket.description}</p>
+                            </div>
+                            <div className="info-item full">
+                              <label>Assigned Staff</label>
+                              <span style={{ color: ticket.assignedTechnicianEmail ? '#0f172a' : '#94a3b8', fontWeight: 600 }}>
+                                {ticket.assignedTechnicianEmail || 'Awaiting Assignment'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="ticket-attachments-side">
+                            <label>Attachments</label>
+                            {ticket.attachments && ticket.attachments.length > 0 ? (
+                              <div className="attachment-previews">
+                                {ticket.attachments.map((img, i) => (
+                                  <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer">
+                                    <img src={img.dataUrl} alt="Incident" />
+                                  </a>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="no-attachments">No visual evidence provided</div>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <span className="no-attachments">No image attachments</span>
-                      )}
-                    </div>
-                  </aside>
+
+                        {ticket.resolutionNotes && (
+                          <div className="resolution-notes-box">
+                            <label><CheckCircle size={14} /> Resolution Notes</label>
+                            <p>{ticket.resolutionNotes}</p>
+                          </div>
+                        )}
+
+                        <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+
+                        {isOpen && (
+                          <div className="admin-ticket-actions">
+                            <form className="assign-form" onSubmit={(e) => handleAssignTechnician(ticket, e)}>
+                              <select
+                                value={selectedTechByTicket[ticketId] || ''}
+                                onChange={(e) => setSelectedTechByTicket(prev => ({ ...prev, [ticketId]: e.target.value }))}
+                              >
+                                <option value="">Select Technician</option>
+                                {technicians.map(t => <option key={t.uid} value={t.uid}>{t.email}</option>)}
+                              </select>
+                              <button type="submit" disabled={!selectedTechByTicket[ticketId] || actionTicketId === ticketId}>
+                                Assign Staff
+                              </button>
+                            </form>
+                            <button className="reject-btn" onClick={() => handleRejectTicket(ticketId, status)}>
+                              Reject Request
+                            </button>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
-
-                {isRejected && (
-                  <p><strong>Reject Reason:</strong> {ticket.rejectionReason || 'N/A'}</p>
-                )}
-
-                {ticket.resolutionNotes && (
-                  <p><strong>Resolution:</strong> {ticket.resolutionNotes}</p>
-                )}
-
-                <CommentSection 
-                  ticket={ticket} 
-                  onUpdate={handleTicketUpdate} 
-                />
-
-                {isOpen ? (
-                  <div className="admin-ticket-actions">
-                    <form className="assign-form" onSubmit={(event) => handleAssignTechnician(ticket, event)}>
-                      <select
-                        value={selectedTechByTicket[ticketId] || ''}
-                        onChange={(event) => setSelectedTechByTicket((prev) => ({
-                          ...prev,
-                          [ticketId]: event.target.value,
-                        }))}
-                        disabled={actionTicketId === ticketId}
-                      >
-                        <option value="">Select Technician</option>
-                        {technicians.map((tech) => (
-                          <option key={tech.uid} value={tech.uid}>{tech.email}</option>
-                        ))}
-                      </select>
-                      <button type="submit" disabled={actionTicketId === ticketId}>
-                        Assign Technician
-                      </button>
-                    </form>
-
-                    <button
-                      className="reject-ticket-btn"
-                      onClick={() => handleRejectTicket(ticketId, status)}
-                      disabled={actionTicketId === ticketId}
-                    >
-                      Reject Ticket
-                    </button>
-                  </div>
-                ) : isRejected ? (
-                  <p className="ticket-locked-note">This ticket is rejected and locked. No further actions allowed.</p>
-                ) : null}
-              </article>
-            );
-          })}
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

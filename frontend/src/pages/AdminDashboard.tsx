@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
 import { ShieldCheck, ShieldAlert, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck, Send, Eye, Target } from 'lucide-react';
@@ -26,8 +27,24 @@ const AdminDashboard: React.FC = () => {
     const [isHealthExpanded, setIsHealthExpanded] = useState(true);
     const [isUsersExpanded, setIsUsersExpanded] = useState(true);
     
+    // URL Persistence
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialTab = searchParams.get('tab') as 'overview' | 'audit' | 'broadcast' || 'overview';
+
     // New States
-    const [activeTab, setActiveTab] = useState<'overview'|'audit'|'broadcast'>('overview');
+    const [activeTab, setActiveTabInternal] = useState<'overview'|'audit'|'broadcast'>(initialTab);
+
+    // Synchronize state with URL
+    const setActiveTab = (tab: 'overview' | 'audit' | 'broadcast') => {
+        setActiveTabInternal(tab);
+        setSearchParams({ tab });
+    };
+
+    useEffect(() => {
+        if (searchParams.get('tab') && searchParams.get('tab') !== activeTab) {
+            setActiveTabInternal(searchParams.get('tab') as any);
+        }
+    }, [searchParams]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [loadingAudit, setLoadingAudit] = useState(false);
     const [broadcastMsg, setBroadcastMsg] = useState('');
