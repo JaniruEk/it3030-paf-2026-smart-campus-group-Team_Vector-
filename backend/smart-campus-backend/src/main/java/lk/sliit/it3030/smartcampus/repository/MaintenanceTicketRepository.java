@@ -57,4 +57,29 @@ public class MaintenanceTicketRepository {
 
         return tickets;
     }
+
+    public MaintenanceTicket findById(String id) throws ExecutionException, InterruptedException {
+        DocumentSnapshot document = firestore.collection(COLLECTION_NAME).document(id).get().get();
+        if (!document.exists()) {
+            return null;
+        }
+        return document.toObject(MaintenanceTicket.class);
+    }
+
+    public List<MaintenanceTicket> findAll() throws ExecutionException, InterruptedException {
+        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+        List<MaintenanceTicket> tickets = new ArrayList<>();
+        for (DocumentSnapshot document : documents) {
+            MaintenanceTicket ticket = document.toObject(MaintenanceTicket.class);
+            if (ticket != null) {
+                tickets.add(ticket);
+            }
+        }
+
+        tickets.sort(Comparator.comparing(MaintenanceTicket::getCreatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+
+        return tickets;
+    }
 }

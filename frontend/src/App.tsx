@@ -8,6 +8,7 @@ import Tickets from './pages/Tickets';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminTickets from './pages/AdminTickets';
 import './App.css';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             {/* Secure Admin Area */}
             <Route element={<AdminRoute />}>
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/tickets" element={<AdminTickets />} />
             </Route>
             
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

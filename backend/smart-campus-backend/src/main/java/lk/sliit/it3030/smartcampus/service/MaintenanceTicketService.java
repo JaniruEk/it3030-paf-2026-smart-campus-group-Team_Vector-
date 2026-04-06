@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 
 @Service
@@ -50,6 +51,74 @@ public class MaintenanceTicketService {
         return maintenanceTicketRepository.findByUserId(userId);
     }
 
+    public List<MaintenanceTicket> getAllTicketsForAdmin() throws ExecutionException, InterruptedException {
+        return maintenanceTicketRepository.findAll();
+    }
+
+    public MaintenanceTicket assignTechnician(String ticketId, String technicianId, String technicianEmail)
+            throws ExecutionException, InterruptedException {
+        if (technicianId == null || technicianId.isBlank()) {
+            throw new IllegalArgumentException("Technician ID is required");
+        }
+
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+        if ("REJECTED".equalsIgnoreCase(ticket.getStatus())) {
+            throw new IllegalArgumentException("Rejected tickets cannot be modified");
+        }
+
+        Date now = new Date();
+
+        ticket.setAssignedTechnicianId(technicianId.trim());
+        ticket.setAssignedTechnicianEmail(trimToNull(technicianEmail));
+        ticket.setAssignedAt(now);
+        ticket.setStatus("IN_PROGRESS");
+        ticket.setUpdatedAt(now);
+
+        maintenanceTicketRepository.save(ticket);
+        return ticket;
+    }
+
+    public MaintenanceTicket updateTicketStatusByAdmin(String ticketId, String status, String reason)
+            throws ExecutionException, InterruptedException {
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("Status is required");
+        }
+
+        String normalizedStatus = status.trim().toUpperCase(Locale.ROOT);
+        if (!"OPEN".equals(normalizedStatus)
+                && !"IN_PROGRESS".equals(normalizedStatus)
+                && !"RESOLVED".equals(normalizedStatus)
+                && !"CLOSED".equals(normalizedStatus)
+                && !"REJECTED".equals(normalizedStatus)) {
+            throw new IllegalArgumentException("Status can only be OPEN, IN_PROGRESS, RESOLVED, CLOSED, or REJECTED");
+        }
+
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+        String currentStatus = ticket.getStatus() == null ? "OPEN" : ticket.getStatus().toUpperCase(Locale.ROOT);
+        if ("REJECTED".equals(currentStatus)) {
+            throw new IllegalArgumentException("Rejected tickets cannot be modified");
+        }
+
+        if ("REJECTED".equals(normalizedStatus)) {
+            if (!"OPEN".equals(currentStatus)) {
+                throw new IllegalArgumentException("Only OPEN tickets can be rejected");
+            }
+            if (reason == null || reason.isBlank()) {
+                throw new IllegalArgumentException("Reason is required when rejecting a ticket");
+            }
+        }
+
+        Date now = new Date();
+
+        ticket.setStatus(normalizedStatus);
+        ticket.setUpdatedAt(now);
+        ticket.setRejectionReason("REJECTED".equals(normalizedStatus) ? reason.trim() : null);
+        ticket.setClosedAt(("CLOSED".equals(normalizedStatus) || "REJECTED".equals(normalizedStatus)) ? now : null);
+
+        maintenanceTicketRepository.save(ticket);
+        return ticket;
+    }
+
     private void validateRequest(CreateMaintenanceTicketRequest request) {
         if (request.getAttachments() != null && request.getAttachments().size() > MAX_ATTACHMENTS) {
             throw new IllegalArgumentException("You can upload up to 3 image attachments only.");
@@ -89,5 +158,13 @@ public class MaintenanceTicketService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private MaintenanceTicket getTicketOrThrow(String ticketId) throws ExecutionException, InterruptedException {
+        MaintenanceTicket ticket = maintenanceTicketRepository.findById(ticketId);
+        if (ticket == null) {
+            throw new NoSuchElementException("Ticket not found");
+        }
+        return ticket;
     }
 }

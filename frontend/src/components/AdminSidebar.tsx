@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Database, ShieldAlert, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { ShieldCheck, Database, ShieldAlert, ChevronLeft, ChevronRight, LogOut, ClipboardList } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
@@ -59,6 +60,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
             <button className={`tab-btn ${activeTab === 'broadcast' ? 'active' : ''}`} onClick={() => setActiveTab('broadcast')} title="Global Broadcast">
                 <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
             </button>
+            <Link className="tab-btn" to="/admin/tickets" title="Manage Tickets">
+                <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Manage Tickets</span>}
+            </Link>
             
             {isProfileModalOpen && (
                 <ProfileModal onClose={() => setProfileModalOpen(false)} />

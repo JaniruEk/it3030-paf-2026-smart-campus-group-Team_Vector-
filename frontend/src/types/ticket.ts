@@ -21,6 +21,11 @@ export interface MaintenanceTicket {
   description: string;
   priority: string;
   status: string;
+  assignedTechnicianId?: string;
+  assignedTechnicianEmail?: string;
+  assignedAt?: string;
+  rejectionReason?: string;
+  closedAt?: string;
   preferredContactDetails: string;
   preferredContactMethod?: string;
   attachments: TicketAttachment[];
