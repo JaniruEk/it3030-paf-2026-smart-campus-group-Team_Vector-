@@ -3,6 +3,7 @@ package lk.sliit.it3030.smartcampus.controller;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +17,7 @@ import lk.sliit.it3030.smartcampus.repository.BookingRepository;
 
 @RestController
 @RequestMapping("/booking")
+@CrossOrigin(origins="http://localhost:5173")
 public class BookingController {
 
     @Autowired
@@ -24,9 +26,13 @@ public class BookingController {
     @PostMapping
     public String createBooking(@RequestBody Booking booking) {
         try {
+            if (booking.getStartTime().isAfter(booking.getEndTime())
+                || booking.getStartTime().equals(booking.getEndTime())) {
+            return "End time must be after start time";
+            }
             List<Booking> existingBookings = bookingRepository.findAll();
 
-            if(existingBookings != null){
+            if(existingBookings != null && !existingBookings.isEmpty()){
                 for (Booking b : existingBookings) {
                 
                     if (b.getBookingResource().equals(booking.getBookingResource())
@@ -53,6 +59,11 @@ public class BookingController {
             e.printStackTrace();
             return "Error while creating booking";
         }
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        return "Booking backend working";
     }
 
 

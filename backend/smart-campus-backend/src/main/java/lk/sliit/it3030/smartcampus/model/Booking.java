@@ -1,5 +1,5 @@
 package lk.sliit.it3030.smartcampus.model;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lk.sliit.it3030.smartcampus.model.BookingStatus;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -10,8 +10,11 @@ public class Booking {
     private String userId;
     private String bookingResource;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
+    @JsonFormat(pattern ="HH:mm")
     private LocalTime startTime;
+    @JsonFormat(pattern ="HH:mm")
     private LocalTime endTime;
 
     private String purpose;

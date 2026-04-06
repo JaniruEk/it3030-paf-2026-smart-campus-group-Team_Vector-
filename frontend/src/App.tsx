@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
+import BookingForm from './components/Booking'
 import './App.css';
 
 function App() {
@@ -29,6 +30,8 @@ function App() {
             </Route>
             
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+             <Route path="/Booking_Form" element={<BookingForm />} />
           </Routes>
         </BrowserRouter>
       </NotificationProvider>
