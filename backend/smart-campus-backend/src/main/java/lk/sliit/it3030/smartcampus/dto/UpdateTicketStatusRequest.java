@@ -9,4 +9,5 @@ public class UpdateTicketStatusRequest {
     private String status;
 
     private String reason;
+    private String resolutionNotes;
 }

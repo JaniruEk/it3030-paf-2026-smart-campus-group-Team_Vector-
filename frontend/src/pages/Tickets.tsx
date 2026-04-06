@@ -11,6 +11,7 @@ import {
   updateMyTicket,
 } from '../services/ticketService';
 import type { CreateTicketPayload, MaintenanceTicket, Resource, TicketAttachment } from '../types/ticket';
+import CommentSection from '../components/CommentSection';
 import './Tickets.css';
 
 const CATEGORY_OPTIONS = [
@@ -456,6 +457,10 @@ const Tickets = () => {
     }
   };
 
+  const handleTicketUpdate = (updatedTicket: MaintenanceTicket) => {
+    setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+  };
+
   return (
     <div className="tickets-page-layout">
       <header className="tickets-header">
@@ -652,6 +657,23 @@ const Tickets = () => {
                         ))}
                       </div>
                     )}
+
+                    {ticket.resolutionNotes && (
+                      <div className="ticket-resolution-box">
+                        <p><strong>Resolution:</strong> {ticket.resolutionNotes}</p>
+                      </div>
+                    )}
+
+                    {ticket.rejectionReason && (
+                      <div className="ticket-rejection-box">
+                        <p><strong>Rejection Reason:</strong> {ticket.rejectionReason}</p>
+                      </div>
+                    )}
+
+                    <CommentSection 
+                      ticket={ticket} 
+                      onUpdate={handleTicketUpdate} 
+                    />
 
                     <div className="ticket-item-actions">
                       <button

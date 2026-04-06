@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import apiClient from '../api/apiClient';
 import type { MaintenanceTicket } from '../types/ticket';
+import CommentSection from '../components/CommentSection';
 import './AdminTickets.css';
 
 interface UserData {
@@ -159,6 +160,10 @@ const AdminTickets = () => {
     } finally {
       setActionTicketId(null);
     }
+  };
+
+  const handleTicketUpdate = (updatedTicket: MaintenanceTicket) => {
+    setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
   };
 
   const handleRejectTicket = async (ticketId: string, currentStatus: TicketDisplayStatus) => {
@@ -334,6 +339,15 @@ const AdminTickets = () => {
                 {isRejected && (
                   <p><strong>Reject Reason:</strong> {ticket.rejectionReason || 'N/A'}</p>
                 )}
+
+                {ticket.resolutionNotes && (
+                  <p><strong>Resolution:</strong> {ticket.resolutionNotes}</p>
+                )}
+
+                <CommentSection 
+                  ticket={ticket} 
+                  onUpdate={handleTicketUpdate} 
+                />
 
                 {isOpen ? (
                   <div className="admin-ticket-actions">

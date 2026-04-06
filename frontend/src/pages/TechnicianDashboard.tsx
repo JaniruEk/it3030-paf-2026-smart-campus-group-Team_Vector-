@@ -4,14 +4,14 @@ import { toast } from 'react-hot-toast';
 import { getAssignedTechnicianTickets, updateTicketStatusByTechnician } from '../services/ticketService';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
-import './TechnicianTickets.css';
+import './TechnicianDashboard.css';
 
 const formatDate = (value?: string) => {
   if (!value) return 'N/A';
   return new Date(value).toLocaleString();
 };
 
-const TechnicianTickets = () => {
+const TechnicianDashboard = () => {
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
@@ -64,8 +64,8 @@ const TechnicianTickets = () => {
   };
 
   return (
-    <div className="technician-page">
-      <header className="technician-header">
+    <div className="technician-dashboard">
+      <header className="tech-header">
         <div>
           <h2>Technician Workspace</h2>
           <p>Manage your assigned maintenance tasks and communicate with users.</p>
@@ -74,40 +74,35 @@ const TechnicianTickets = () => {
       </header>
 
       {isLoading ? (
-        <div className="technician-state-card">Loading assigned tickets...</div>
+        <div className="loading">Loading assigned tickets...</div>
       ) : tickets.length === 0 ? (
-        <div className="technician-state-card">No tickets assigned to you at the moment.</div>
+        <div className="empty-state">No tickets assigned to you at the moment.</div>
       ) : (
-        <div className="technician-ticket-list">
+        <div className="ticket-grid">
           {tickets.map((ticket) => (
-            <article key={ticket.id} className="technician-ticket-card">
-              <div className="tech-ticket-badge-row">
-                <span className={`status-pill status-${(ticket.status || 'OPEN').toLowerCase()}`}>{ticket.status || 'OPEN'}</span>
-                <span className={`status-pill priority-${(ticket.priority || 'LOW').toLowerCase()}`}>{ticket.priority || 'LOW'}</span>
-              </div>
-
-              <div className="technician-ticket-head">
+            <article key={ticket.id} className="tech-ticket-card">
+              <div className="ticket-card-header">
                 <h3>{ticket.category} Issue</h3>
+                <span className={`status-badge status-${ticket.status.toLowerCase()}`}>{ticket.status}</span>
+                <span className={`priority-badge priority-${ticket.priority.toLowerCase()}`}>{ticket.priority}</span>
               </div>
 
-              <div className="ticket-details-box">
+              <div className="ticket-card-body">
                 <p><strong>Created:</strong> {formatDate(ticket.createdAt)}</p>
                 <p><strong>Location:</strong> {ticket.resourceName || ticket.location}</p>
-                <p><strong>Description:</strong> {ticket.description}</p>
-                <p><strong>Requester Contact:</strong> {ticket.preferredContactMethod || 'ANY'} - {ticket.preferredContactDetails}</p>
+                <p className="ticket-description"><strong>Description:</strong> {ticket.description}</p>
                 
                 {ticket.resolutionNotes && (
-                  <div className="resolution-display-box">
+                  <div className="resolution-display">
                     <strong>Current Resolution Notes:</strong>
                     <p>{ticket.resolutionNotes}</p>
                   </div>
                 )}
               </div>
 
-              <div className="technician-status-actions">
+              <div className="ticket-card-actions">
                 {ticket.status === 'OPEN' && (
                   <button 
-                    className="status-action-btn"
                     onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
                     disabled={updatingTicketId === ticket.id}
                   >
@@ -116,7 +111,7 @@ const TechnicianTickets = () => {
                 )}
                 {ticket.status === 'IN_PROGRESS' && (
                   <button 
-                    className="status-action-btn resolve-action"
+                    className="resolve-btn"
                     onClick={() => handleUpdateStatus(ticket.id, 'RESOLVED')}
                     disabled={updatingTicketId === ticket.id}
                   >
@@ -125,7 +120,6 @@ const TechnicianTickets = () => {
                 )}
                 {ticket.status === 'RESOLVED' && (
                   <button 
-                    className="status-action-btn"
                     onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
                     disabled={updatingTicketId === ticket.id}
                   >
@@ -143,4 +137,4 @@ const TechnicianTickets = () => {
   );
 };
 
-export default TechnicianTickets;
+export default TechnicianDashboard;

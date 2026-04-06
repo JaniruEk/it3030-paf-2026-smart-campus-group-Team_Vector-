@@ -8,6 +8,7 @@ import Tickets from './pages/Tickets';
 import TechnicianTickets from './pages/TechnicianTickets';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import TechnicianRoute from './components/TechnicianRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminTickets from './pages/AdminTickets';
 import './App.css';
@@ -24,6 +25,10 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tickets" element={<Tickets />} />
+            </Route>
+
+            {/* Secure Technician Area */}
+            <Route element={<TechnicianRoute />}>
               <Route path="/technician/tickets" element={<TechnicianTickets />} />
             </Route>
 

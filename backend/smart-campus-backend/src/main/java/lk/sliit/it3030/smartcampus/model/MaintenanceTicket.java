@@ -27,6 +27,7 @@ public class MaintenanceTicket {
     private String assignedTechnicianEmail;
     private Date assignedAt;
     private String rejectionReason;
+    private String resolutionNotes;
     private Date closedAt;
     private String preferredContactDetails;
     private String preferredContactMethod;

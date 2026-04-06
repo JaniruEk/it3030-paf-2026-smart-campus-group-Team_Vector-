@@ -1,7 +1,7 @@
 import apiClient from '../api/apiClient';
 import type { CreateTicketPayload, MaintenanceTicket, Resource } from '../types/ticket';
 
-export interface TechnicianTicketMessagePayload {
+export interface TicketCommentPayload {
   message?: string;
   imageDataUrl?: string;
   imageFileName?: string;
@@ -9,8 +9,10 @@ export interface TechnicianTicketMessagePayload {
   senderEmail?: string;
 }
 
-export interface TechnicianTicketStatusPayload {
-  status: 'IN_PROGRESS' | 'RESOLVED';
+export interface TicketStatusUpdatePayload {
+  status: string;
+  reason?: string;
+  resolutionNotes?: string;
 }
 
 export const getMyTickets = async (): Promise<MaintenanceTicket[]> => {
@@ -42,18 +44,35 @@ export const getAssignedTechnicianTickets = async (): Promise<MaintenanceTicket[
   return response.data;
 };
 
-export const postTechnicianTicketMessage = async (
+export const addTicketComment = async (
   ticketId: string,
-  payload: TechnicianTicketMessagePayload,
+  payload: TicketCommentPayload,
 ): Promise<MaintenanceTicket> => {
-  const response = await apiClient.post<MaintenanceTicket>(`/tickets/${ticketId}/technician-message`, payload);
+  const response = await apiClient.post<MaintenanceTicket>(`/tickets/${ticketId}/comments`, payload);
   return response.data;
 };
 
-export const patchTechnicianTicketStatus = async (
+export const updateTicketComment = async (
   ticketId: string,
-  payload: TechnicianTicketStatusPayload,
+  commentIndex: number,
+  payload: TicketCommentPayload,
+): Promise<MaintenanceTicket> => {
+  const response = await apiClient.patch<MaintenanceTicket>(`/tickets/${ticketId}/comments/${commentIndex}`, payload);
+  return response.data;
+};
+
+export const deleteTicketComment = async (
+  ticketId: string,
+  commentIndex: number,
+): Promise<MaintenanceTicket> => {
+  const response = await apiClient.delete<MaintenanceTicket>(`/tickets/${ticketId}/comments/${commentIndex}`);
+  return response.data;
+};
+
+export const updateTicketStatusByTechnician = async (
+  ticketId: string,
+  payload: TicketStatusUpdatePayload,
 ): Promise<MaintenanceTicket> => {
   const response = await apiClient.patch<MaintenanceTicket>(`/tickets/${ticketId}/technician-status`, payload);
   return response.data;
-};
+};

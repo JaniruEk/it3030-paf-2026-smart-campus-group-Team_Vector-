@@ -3,7 +3,6 @@ package lk.sliit.it3030.smartcampus.controller;
 import jakarta.validation.Valid;
 import lk.sliit.it3030.smartcampus.dto.AssignTechnicianRequest;
 import lk.sliit.it3030.smartcampus.dto.CreateMaintenanceTicketRequest;
-import lk.sliit.it3030.smartcampus.dto.TechnicianTicketMessageRequest;
 import lk.sliit.it3030.smartcampus.dto.UpdateTicketStatusRequest;
 import lk.sliit.it3030.smartcampus.model.MaintenanceTicket;
 import lk.sliit.it3030.smartcampus.service.MaintenanceTicketService;
@@ -165,17 +164,68 @@ public class MaintenanceTicketController {
         }
     }
 
-    @PostMapping("/{ticketId}/technician-message")
-    @PreAuthorize("hasRole('TECHNICIAN')")
-    public ResponseEntity<?> addTechnicianMessage(@PathVariable String ticketId,
-                                                  @RequestBody TechnicianTicketMessageRequest request,
-                                                  Authentication authentication) {
+    @PostMapping("/{ticketId}/comments")
+    public ResponseEntity<?> addComment(@PathVariable String ticketId,
+                                        @Valid @RequestBody lk.sliit.it3030.smartcampus.dto.CommentRequest request,
+                                        Authentication authentication) {
         try {
-            String technicianId = authentication.getName();
-            MaintenanceTicket updatedTicket = maintenanceTicketService.addTechnicianMessage(
+            String userId = authentication.getName();
+            String role = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+            MaintenanceTicket updatedTicket = maintenanceTicketService.addTicketComment(
                     ticketId,
-                    technicianId,
+                    userId,
+                    role,
                     request
+            );
+            return ResponseEntity.ok(updatedTicket);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PatchMapping("/{ticketId}/comments/{commentIndex}")
+    public ResponseEntity<?> updateComment(@PathVariable String ticketId,
+                                           @PathVariable int commentIndex,
+                                           @Valid @RequestBody lk.sliit.it3030.smartcampus.dto.CommentRequest request,
+                                           Authentication authentication) {
+        try {
+            String userId = authentication.getName();
+            MaintenanceTicket updatedTicket = maintenanceTicketService.updateTicketComment(
+                    ticketId,
+                    userId,
+                    commentIndex,
+                    request
+            );
+            return ResponseEntity.ok(updatedTicket);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/{ticketId}/comments/{commentIndex}")
+    public ResponseEntity<?> deleteComment(@PathVariable String ticketId,
+                                           @PathVariable int commentIndex,
+                                           Authentication authentication) {
+        try {
+            String userId = authentication.getName();
+            String role = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+            MaintenanceTicket updatedTicket = maintenanceTicketService.deleteTicketComment(
+                    ticketId,
+                    userId,
+                    role,
+                    commentIndex
             );
             return ResponseEntity.ok(updatedTicket);
         } catch (NoSuchElementException e) {
@@ -199,7 +249,8 @@ public class MaintenanceTicketController {
             MaintenanceTicket updatedTicket = maintenanceTicketService.updateTicketStatusByTechnician(
                     ticketId,
                     technicianId,
-                    request.getStatus()
+                    request.getStatus(),
+                    request.getResolutionNotes()
             );
             return ResponseEntity.ok(updatedTicket);
         } catch (NoSuchElementException e) {

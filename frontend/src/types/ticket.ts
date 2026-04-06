@@ -36,6 +36,7 @@ export interface MaintenanceTicket {
   assignedTechnicianEmail?: string;
   assignedAt?: string;
   rejectionReason?: string;
+  resolutionNotes?: string;
   closedAt?: string;
   preferredContactDetails: string;
   preferredContactMethod?: string;

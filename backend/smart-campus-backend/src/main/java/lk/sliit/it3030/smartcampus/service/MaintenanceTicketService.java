@@ -16,6 +16,9 @@ import java.util.concurrent.ExecutionException;
 public class MaintenanceTicketService {
 
     private static final int MAX_ATTACHMENTS = 3;
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_TECHNICIAN = "TECHNICIAN";
+    private static final String ROLE_USER = "USER";
 
     private final MaintenanceTicketRepository maintenanceTicketRepository;
 
@@ -96,20 +99,25 @@ public class MaintenanceTicketService {
         return maintenanceTicketRepository.findByAssignedTechnicianId(technicianId);
     }
 
-    public MaintenanceTicket addTechnicianMessage(String ticketId,
-                                                  String technicianId,
-                                                  TechnicianTicketMessageRequest request)
+    public MaintenanceTicket addTicketComment(String ticketId,
+                                              String userId,
+                                              String userRole,
+                                              lk.sliit.it3030.smartcampus.dto.CommentRequest request)
             throws ExecutionException, InterruptedException {
         MaintenanceTicket ticket = getTicketOrThrow(ticketId);
 
-        String assignedTechId = trimToNull(ticket.getAssignedTechnicianId());
-        if (assignedTechId == null || !assignedTechId.equals(technicianId)) {
-            throw new IllegalArgumentException("You are not assigned to this ticket");
-        }
-
         String currentStatus = ticket.getStatus() == null ? "OPEN" : ticket.getStatus().toUpperCase(Locale.ROOT);
         if ("REJECTED".equals(currentStatus) || "CLOSED".equals(currentStatus)) {
-            throw new IllegalArgumentException("Cannot update a closed or rejected ticket");
+            throw new IllegalArgumentException("Cannot add comments to a closed or rejected ticket");
+        }
+
+        // Optional: restriction that only owner or assigned tech or admin can comment
+        boolean isAdmin = ROLE_ADMIN.equals(userRole);
+        boolean isOwner = userId.equals(ticket.getUserId());
+        boolean isAssignedTech = userId.equals(ticket.getAssignedTechnicianId());
+
+        if (!isAdmin && !isOwner && !isAssignedTech) {
+            throw new IllegalArgumentException("You do not have permission to comment on this ticket");
         }
 
         String message = trimToNull(request.getMessage());
@@ -119,7 +127,7 @@ public class MaintenanceTicketService {
         }
 
         if (imageDataUrl != null && !imageDataUrl.startsWith("data:image/")) {
-            throw new IllegalArgumentException("Only image attachments are allowed for technician updates");
+            throw new IllegalArgumentException("Only image attachments are allowed for comments");
         }
 
         if (ticket.getTicketMessages() == null) {
@@ -127,8 +135,8 @@ public class MaintenanceTicketService {
         }
 
         MaintenanceTicket.TicketMessage ticketMessage = new MaintenanceTicket.TicketMessage(
-                technicianId,
-                "TECHNICIAN",
+                userId,
+                userRole,
                 trimToNull(request.getSenderEmail()),
                 message,
                 imageDataUrl,
@@ -144,9 +152,68 @@ public class MaintenanceTicketService {
         return ticket;
     }
 
+    public MaintenanceTicket updateTicketComment(String ticketId,
+                                                 String userId,
+                                                 int commentIndex,
+                                                 lk.sliit.it3030.smartcampus.dto.CommentRequest request)
+            throws ExecutionException, InterruptedException {
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+        List<MaintenanceTicket.TicketMessage> messages = ticket.getTicketMessages();
+
+        if (messages == null || commentIndex < 0 || commentIndex >= messages.size()) {
+            throw new NoSuchElementException("Comment not found");
+        }
+
+        MaintenanceTicket.TicketMessage message = messages.get(commentIndex);
+        if (message.getSenderId() == null || !message.getSenderId().equals(userId)) {
+            throw new IllegalArgumentException("You can only edit your own comments");
+        }
+
+        String content = trimToNull(request.getMessage());
+        if (content == null) {
+            throw new IllegalArgumentException("Message content cannot be empty");
+        }
+
+        message.setMessage(content);
+        // We typically don't allow changing images in an edit for simplicity, or we can.
+        // Let's just update the message text as per typical comment edit rules.
+        
+        ticket.setUpdatedAt(new Date());
+        maintenanceTicketRepository.save(ticket);
+        return ticket;
+    }
+
+    public MaintenanceTicket deleteTicketComment(String ticketId,
+                                                 String userId,
+                                                 String userRole,
+                                                 int commentIndex)
+            throws ExecutionException, InterruptedException {
+        MaintenanceTicket ticket = getTicketOrThrow(ticketId);
+        List<MaintenanceTicket.TicketMessage> messages = ticket.getTicketMessages();
+
+        if (messages == null || commentIndex < 0 || commentIndex >= messages.size()) {
+            throw new NoSuchElementException("Comment not found");
+        }
+
+        MaintenanceTicket.TicketMessage message = messages.get(commentIndex);
+        
+        boolean isAdmin = ROLE_ADMIN.equals(userRole);
+        boolean isAuthor = userId.equals(message.getSenderId());
+
+        if (!isAdmin && !isAuthor) {
+            throw new IllegalArgumentException("You do not have permission to delete this comment");
+        }
+
+        messages.remove(commentIndex);
+        ticket.setUpdatedAt(new Date());
+        maintenanceTicketRepository.save(ticket);
+        return ticket;
+    }
+
     public MaintenanceTicket updateTicketStatusByTechnician(String ticketId,
                                                             String technicianId,
-                                                            String targetStatus)
+                                                            String targetStatus,
+                                                            String resolutionNotes)
             throws ExecutionException, InterruptedException {
         if (targetStatus == null || targetStatus.isBlank()) {
             throw new IllegalArgumentException("Status is required");
@@ -170,11 +237,16 @@ public class MaintenanceTicketService {
         }
 
         boolean validTransition =
-                ("IN_PROGRESS".equals(currentStatus) && "RESOLVED".equals(normalizedTarget))
+                ("OPEN".equals(currentStatus) && "IN_PROGRESS".equals(normalizedTarget))
+                        || ("IN_PROGRESS".equals(currentStatus) && "RESOLVED".equals(normalizedTarget))
                         || ("RESOLVED".equals(currentStatus) && "IN_PROGRESS".equals(normalizedTarget));
 
         if (!validTransition) {
-            throw new IllegalArgumentException("Technician can only resolve IN_PROGRESS tickets or reopen RESOLVED tickets to IN_PROGRESS");
+             // Allow technician to pick up an OPEN ticket too if assigned
+        }
+
+        if ("RESOLVED".equals(normalizedTarget)) {
+            ticket.setResolutionNotes(trimToNull(resolutionNotes));
         }
 
         ticket.setStatus(normalizedTarget);

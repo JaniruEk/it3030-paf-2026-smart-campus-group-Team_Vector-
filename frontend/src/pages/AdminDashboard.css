@@ -196,6 +196,7 @@
   padding: 0.8rem 1rem;
   font-size: 1rem;
   font-weight: 600;
+  font-family: inherit;
   color: #64748b;
   cursor: pointer;
   border-left: 3px solid transparent;
@@ -206,6 +207,7 @@
   gap: 0.75rem;
   width: 100%;
   text-align: left;
+  text-decoration: none;
 }
 
 .tab-btn:hover {
