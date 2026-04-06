@@ -1,0 +1,248 @@
+.tickets-page-layout {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #334155;
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 1.5rem;
+}
+
+.tickets-header {
+  max-width: 1200px;
+  margin: 0 auto 1.5rem;
+  background: white;
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.tickets-header h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.tickets-header p {
+  margin: 0.4rem 0 0;
+  color: #64748b;
+}
+
+.back-link {
+  text-decoration: none;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.tickets-content-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.ticket-create-card,
+.ticket-list-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1);
+  padding: 1.2rem;
+}
+
+.ticket-create-card h3,
+.ticket-list-card h3 {
+  margin-top: 0;
+  color: #0f172a;
+}
+
+.ticket-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ticket-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.ticket-form input,
+.ticket-form select,
+.ticket-form textarea {
+  border: 1px solid #dbe5ef;
+  border-radius: 8px;
+  padding: 0.7rem 0.75rem;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.ticket-form textarea {
+  resize: vertical;
+}
+
+.attachment-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.attachment-preview-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.attachment-preview-item img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.attachment-preview-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  background: #f8fafc;
+}
+
+.attachment-preview-footer span {
+  font-size: 0.72rem;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-preview-footer button {
+  border: none;
+  background: #ef4444;
+  color: white;
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.submit-ticket-btn {
+  border: none;
+  background: #0284c7;
+  color: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-ticket-btn:hover {
+  background: #0369a1;
+}
+
+.submit-ticket-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.ticket-list {
+  display: grid;
+  gap: 0.9rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 0.3rem;
+}
+
+.ticket-item {
+  border: 1px solid #dbe5ef;
+  border-radius: 10px;
+  padding: 0.9rem;
+  background: #f8fafc;
+}
+
+.ticket-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.ticket-item h4 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.status-pill {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-weight: 700;
+}
+
+.status-open {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ticket-meta {
+  margin: 0.55rem 0;
+  font-size: 0.84rem;
+  color: #475569;
+}
+
+.ticket-description {
+  margin: 0.55rem 0;
+  color: #1f2937;
+  white-space: pre-wrap;
+}
+
+.ticket-attachments {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.ticket-attachment-link {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 80px;
+  height: 80px;
+}
+
+.ticket-attachment-link img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 1024px) {
+  .tickets-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .tickets-page-layout {
+    padding: 0.8rem;
+  }
+
+  .tickets-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .attachment-preview-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

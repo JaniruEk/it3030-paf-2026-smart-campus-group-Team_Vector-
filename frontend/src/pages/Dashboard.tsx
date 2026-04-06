@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import NotificationBell from '../components/NotificationBell';
 import ProfileModal from '../components/ProfileModal';
 import './Dashboard.css';
@@ -38,6 +38,9 @@ const Dashboard: React.FC = () => {
                 <div className="welcome-card">
                     <h1>Welcome back!</h1>
                     <p>You have successfully logged in using Firebase Auth. Your current assigned role is: <strong>{userRole || 'USER'}</strong></p>
+                    <div className="dashboard-actions">
+                        <Link to="/tickets" className="dashboard-action-link">Manage My Tickets</Link>
+                    </div>
                 </div>
             </main>
 

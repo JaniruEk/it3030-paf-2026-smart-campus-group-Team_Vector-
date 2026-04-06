@@ -97,3 +97,22 @@
   margin-top: 0;
   color: #0f172a;
 }
+
+.dashboard-actions {
+  margin-top: 1.25rem;
+}
+
+.dashboard-action-link {
+  display: inline-block;
+  text-decoration: none;
+  background: #0284c7;
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.dashboard-action-link:hover {
+  background: #0369a1;
+}

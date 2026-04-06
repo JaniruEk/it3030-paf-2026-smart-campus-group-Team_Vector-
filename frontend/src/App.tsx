@@ -4,6 +4,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Tickets from './pages/Tickets';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
@@ -20,7 +21,7 @@ function App() {
             
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              {/* Additional protected routes go here */}
+              <Route path="/tickets" element={<Tickets />} />
             </Route>
 
             {/* Secure Admin Area */}

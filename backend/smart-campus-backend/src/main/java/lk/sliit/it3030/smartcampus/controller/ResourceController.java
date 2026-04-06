@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @RestController
-@RequestMapping("/api/resources")
+@RequestMapping({"/api/resources", "/api/v1/resources"})
 @CrossOrigin(origins = "*") 
 public class ResourceController {
 
