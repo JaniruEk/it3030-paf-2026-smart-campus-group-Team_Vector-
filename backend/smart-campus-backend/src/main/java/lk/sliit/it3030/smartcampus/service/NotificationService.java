@@ -92,4 +92,21 @@ public class NotificationService {
             docRef.delete().get();
         }
     }
+    public void markAllAsRead(String userId) throws ExecutionException, InterruptedException {
+        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
+                .whereEqualTo("recipientId", userId)
+                .whereEqualTo("isRead", false)
+                .get();
+
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+        WriteBatch batch = firestore.batch();
+        
+        for (DocumentSnapshot document : documents) {
+            batch.update(document.getReference(), "isRead", true);
+        }
+        
+        if (!documents.isEmpty()) {
+            batch.commit().get();
+        }
+    }
 }

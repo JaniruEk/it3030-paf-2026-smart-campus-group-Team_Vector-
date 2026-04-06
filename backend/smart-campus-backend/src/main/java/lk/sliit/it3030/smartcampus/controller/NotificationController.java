@@ -45,22 +45,29 @@ public class NotificationController {
     public ResponseEntity<String> broadcastSystemNotification(@RequestBody Map<String, String> request, Authentication auth) {
         try {
             String message = request.get("message");
-            String targetRole = request.getOrDefault("role", "ALL"); // ALL, USER, TECHNICIAN, etc.
+            String targetRole = request.getOrDefault("role", "ALL").trim();
+            
+            System.out.println("Processing broadcast: target=" + targetRole + ", message=" + message);
             
             ListUsersPage page = FirebaseAuth.getInstance().listUsers(null);
-            int count = 0;
+            int totalProcessed = 0;
+            int matchCount = 0;
+            
             for (ExportedUserRecord user : page.iterateAll()) {
+                totalProcessed++;
                 String userRole = "USER";
                 Map<String, Object> claims = user.getCustomClaims();
-                if (claims != null && claims.containsKey("role")) {
+                if (claims != null && claims.containsKey("role") && claims.get("role") != null) {
                     userRole = (String) claims.get("role");
                 }
                 
-                if (targetRole.equals("ALL") || targetRole.equals(userRole)) {
+                if (targetRole.equalsIgnoreCase("ALL") || targetRole.equalsIgnoreCase(userRole)) {
                     notificationService.createNotification(user.getUid(), message, "BROADCAST");
-                    count++;
+                    matchCount++;
                 }
             }
+            System.out.println("Broadcast summary: Total users scanned=" + totalProcessed + ", Notifications created=" + matchCount);
+
             String performedBy = auth.getName();
             try {
                 String email = FirebaseAuth.getInstance().getUser(performedBy).getEmail();
@@ -75,7 +82,7 @@ public class NotificationController {
                         .timestamp(new java.util.Date())
                         .build());
                         
-            return ResponseEntity.status(HttpStatus.CREATED).body("Broadcast sent to " + count + " users.");
+            return ResponseEntity.status(HttpStatus.CREATED).body("Broadcast sent to " + matchCount + " users.");
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed to send broadcast: " + e.getMessage());
@@ -103,6 +110,16 @@ public class NotificationController {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markAllNotificationsRead(Authentication authentication) {
+        try {
+            String userId = authentication.getName();
+            notificationService.markAllAsRead(userId);
+            return ResponseEntity.noContent().build();
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }

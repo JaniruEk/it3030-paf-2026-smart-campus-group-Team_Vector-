@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, ShieldAlert, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck, Send, Eye, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 import NotificationBell from '../components/NotificationBell';
 import AdminSidebar from '../components/AdminSidebar';
@@ -33,6 +33,7 @@ const AdminDashboard: React.FC = () => {
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [broadcastRole, setBroadcastRole] = useState('ALL');
     const [isBroadcasting, setIsBroadcasting] = useState(false);
+    const [selectedLog, setSelectedLog] = useState<any | null>(null);
 
     const fetchUsers = async () => {
         try {
@@ -130,6 +131,15 @@ const AdminDashboard: React.FC = () => {
             case 'TECHNICIAN': return <UserCog size={18} className="role-icon tech-icon" />;
             default: return <User size={18} className="role-icon user-icon" />;
         }
+    };
+
+    const getActionBadgeClass = (action: string) => {
+        const a = action.toLowerCase();
+        if (a.includes('broadcast')) return 'broadcast';
+        if (a.includes('role')) return 'role_update';
+        if (a.includes('login')) return 'login';
+        if (a.includes('status')) return 'status_update';
+        return 'default';
     };
 
     return (
@@ -315,12 +325,18 @@ const AdminDashboard: React.FC = () => {
                                     </thead>
                                     <tbody>
                                         {auditLogs.map((log) => (
-                                            <tr key={log.id}>
+                                            <tr key={log.id} className="audit-row" onClick={() => setSelectedLog(log)}>
                                                 <td className="mono">{new Date(log.timestamp).toLocaleString()}</td>
-                                                <td style={{ fontWeight: 600 }}>{log.action}</td>
+                                                <td>
+                                                    <span className={`action-badge ${getActionBadgeClass(log.action)}`}>
+                                                        {log.action.replace('_', ' ')}
+                                                    </span>
+                                                </td>
                                                 <td>{log.performedBy}</td>
                                                 <td className="mono" style={{ fontSize: '0.8rem' }}>{log.targetUser}</td>
-                                                <td style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>{log.details || '-'}</td>
+                                                <td style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {log.details || '-'}
+                                                </td>
                                             </tr>
                                         ))}
                                         {auditLogs.length === 0 && (
@@ -337,52 +353,160 @@ const AdminDashboard: React.FC = () => {
 
                 {activeTab === 'broadcast' && (
                     <div className="admin-card">
-                        <div className="card-header">
-                            <h3>Global Broadcast</h3>
-                            <p>Send a real-time WebSocket push notification to personnel.</p>
+                        <div className="card-header" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Send size={24} style={{ color: '#3b82f6' }} />
+                                Global Broadcast Center
+                            </h3>
+                            <p>Distribute real-time intelligence and alerts to the campus network.</p>
                         </div>
-                        <div style={{ padding: '2rem' }}>
-                            <form onSubmit={handleBroadcast} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '600px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.5rem' }}>Target Audience</label>
-                                    <select 
-                                        value={broadcastRole} 
-                                        onChange={(e) => setBroadcastRole(e.target.value)}
-                                        style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                    >
-                                        <option value="ALL">All Registered Users</option>
-                                        <option value="ADMIN">Administrators Only</option>
-                                        <option value="TECHNICIAN">Technicians Only</option>
-                                        <option value="USER">Standard Users Only</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.5rem' }}>Broadcast Message</label>
-                                    <textarea 
-                                        value={broadcastMsg}
-                                        onChange={(e) => setBroadcastMsg(e.target.value)}
-                                        rows={4}
-                                        placeholder="Enter the critical announcement here..."
-                                        style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', resize: 'vertical' }}
-                                        required
-                                    />
-                                </div>
+                        
+                        <div className="broadcast-grid">
+                            {/* Left: Form */}
+                            <div className="broadcast-form-section">
+                                <section>
+                                    <h4 className="preview-label" style={{ marginBottom: '1rem' }}>
+                                        <Target size={16} /> Select Audience
+                                    </h4>
+                                    <div className="audience-selector">
+                                        {[
+                                            { id: 'ALL', label: 'All Users', icon: <Users size={20} /> },
+                                            { id: 'ADMIN', label: 'Admins', icon: <ShieldCheck size={20} /> },
+                                            { id: 'TECHNICIAN', label: 'Techs', icon: <UserCog size={20} /> },
+                                            { id: 'USER', label: 'Students', icon: <User size={20} /> },
+                                        ].map((role) => (
+                                            <label key={role.id} className="role-option">
+                                                <input 
+                                                    type="radio" 
+                                                    name="audience" 
+                                                    value={role.id} 
+                                                    checked={broadcastRole === role.id}
+                                                    onChange={(e) => setBroadcastRole(e.target.value)}
+                                                />
+                                                <div className="role-card">
+                                                    {role.icon}
+                                                    <span>{role.label}</span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section>
+                                    <h4 className="preview-label" style={{ marginBottom: '1rem' }}>
+                                        Broadcast Message
+                                    </h4>
+                                    <div className="broadcast-textarea-wrapper">
+                                        <textarea 
+                                            value={broadcastMsg}
+                                            onChange={(e) => setBroadcastMsg(e.target.value.substring(0, 280))}
+                                            placeholder="What's the announcement? (Max 280 chars)"
+                                            required
+                                        />
+                                        <div className="char-counter">
+                                            {broadcastMsg.length}/280
+                                        </div>
+                                    </div>
+                                </section>
+
                                 <button 
-                                    type="submit" 
-                                    disabled={isBroadcasting}
-                                    style={{ 
-                                        background: '#3b82f6', color: 'white', padding: '0.8rem', borderRadius: '6px', 
-                                        border: 'none', fontWeight: 600, cursor: isBroadcasting ? 'wait' : 'pointer'
-                                    }}
+                                    className={`send-broadcast-btn ${broadcastMsg.trim() ? 'pulse-glowing' : ''}`}
+                                    onClick={handleBroadcast}
+                                    disabled={isBroadcasting || !broadcastMsg.trim()}
                                 >
-                                    {isBroadcasting ? 'Broadcasting...' : 'SEND BROADCAST NOW'}
+                                    {isBroadcasting ? (
+                                        <>Deploying Broadcast...</>
+                                    ) : (
+                                        <>
+                                            <Send size={18} /> SEND BROADCAST NOW
+                                        </>
+                                    )}
                                 </button>
-                            </form>
+                            </div>
+
+                            {/* Right: Preview */}
+                            <div className="live-preview-section">
+                                <h4 className="preview-label">
+                                    <Eye size={16} /> Live UI Preview
+                                </h4>
+                                
+                                <div className="preview-card-skeleton">
+                                    <div className="preview-tag">
+                                        BROADCAST: {broadcastRole}
+                                    </div>
+                                    <div className={`preview-content-placeholder ${!broadcastMsg ? 'empty' : ''}`}>
+                                        {broadcastMsg || "Start typing to see how your message will appear to the campus..."}
+                                    </div>
+                                    <div className="preview-footer">
+                                        <span className="preview-time">Just now</span>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#f1f5f9' }} />
+                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#f1f5f9' }} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: '1.4', padding: '0 0.5rem' }}>
+                                    <strong>Note:</strong> This message will be delivered instantly via WebSocket 
+                                    to all online personnel in the selected group.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
                 </div>
             </div>
+
+            {selectedLog && (
+                <div className="audit-modal-overlay" onClick={() => setSelectedLog(null)}>
+                    <div className="audit-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="audit-modal-header">
+                            <div className="modal-header-content">
+                                <span className={`action-badge ${getActionBadgeClass(selectedLog.action)}`}>
+                                    {selectedLog.action.replace('_', ' ')}
+                                </span>
+                                <h2>Audit Log Details</h2>
+                            </div>
+                            <button className="audit-modal-close" onClick={() => setSelectedLog(null)}>
+                                <ChevronDown size={24} />
+                            </button>
+                        </div>
+                        
+                        <div className="audit-modal-body">
+                            <div className="modal-info-grid">
+                                <div className="info-item">
+                                    <label>Timestamp</label>
+                                    <span>{new Date(selectedLog.timestamp).toLocaleString()}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Performed By</label>
+                                    <span>{selectedLog.performedBy}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Target Reference</label>
+                                    <span className="mono">{selectedLog.targetUser || 'N/A'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Log ID</label>
+                                    <span className="mono">{selectedLog.id?.substring(0, 12)}...</span>
+                                </div>
+                                <div className="info-item full-width">
+                                    <label>Detailed Payload / Message</label>
+                                    <div className="details-payload">
+                                        {selectedLog.details || 'No additional details recorded.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="audit-modal-footer">
+                            <button className="modal-action-btn" onClick={() => setSelectedLog(null)}>
+                                Close Record
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
