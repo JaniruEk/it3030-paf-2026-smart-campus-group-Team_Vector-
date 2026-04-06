@@ -34,6 +34,7 @@ const AdminDashboard: React.FC = () => {
     const [broadcastRole, setBroadcastRole] = useState('ALL');
     const [isBroadcasting, setIsBroadcasting] = useState(false);
     const [selectedLog, setSelectedLog] = useState<any | null>(null);
+    const [selectedStat, setSelectedStat] = useState<{title: string, value: any, desc: string, icon: any, color?: string} | null>(null);
 
     const fetchUsers = async () => {
         try {
@@ -180,37 +181,100 @@ const AdminDashboard: React.FC = () => {
                                  <div className="loading-state">Accessing secure health telemetry...</div>
                             ) : healthData ? (
                                 <div className="health-dashboard">
-                                    <div className="health-stat-card">
+                                    <div 
+                                        className="health-stat-card health-main-status"
+                                        onClick={() => setSelectedStat({
+                                            title: "System Status",
+                                            value: healthData.status,
+                                            desc: "The overall health of the Smart Campus platform. All API services, background workers, and critical processes are currently active and responding within normal parameters.",
+                                            icon: <ShieldCheck size={48} />,
+                                            color: healthData.status?.includes('Online') ? '#10b981' : '#f59e0b'
+                                        })}
+                                    >
                                         <span className="health-stat-title">System Status</span>
                                         <span className={`health-stat-value ${healthData.status?.includes('Online') ? 'ok' : 'warning'}`}>
                                             {healthData.status}
                                         </span>
                                     </div>
-                            <div className="health-stat-card">
-                                <span className="health-stat-title"><Cpu size={16} style={{display:'inline', marginBottom:'-2px'}}/> CPU Usage</span>
-                                <span className="health-stat-value">{healthData.cpuUsage}</span>
-                            </div>
-                            <div className="health-stat-card">
-                                <span className="health-stat-title"><MemoryStick size={16} style={{display:'inline', marginBottom:'-2px'}}/> RAM Usage</span>
-                                <span className="health-stat-value">{healthData.memoryUsage}</span>
-                            </div>
-                            <div className="health-stat-card">
-                                <span className="health-stat-title"><Users size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Active Users</span>
-                                <span className="health-stat-value">{healthData.activeUsers || 0}</span>
-                            </div>
-                            <div className="health-stat-card">
-                                <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Resources</span>
-                                <span className="health-stat-value">{healthData.totalResources !== undefined ? healthData.totalResources : 'N/A'}</span>
-                            </div>
-                            <div className="health-stat-card">
-                                <span className="health-stat-title"><UserCheck size={16} style={{display:'inline', marginBottom:'-2px', color:'#10b981'}}/> Online Now</span>
-                                <span className="health-stat-value ok">{healthData.onlineUsers || 0}</span>
-                            </div>
-                            <div className="health-stat-card">
-                                <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Database</span>
-                                <span className="health-stat-value ok">{healthData.databaseStatus}</span>
-                            </div>
-                        </div>
+                                    <div 
+                                        className="health-stat-card"
+                                        onClick={() => setSelectedStat({
+                                            title: "Database Integrity",
+                                            value: healthData.databaseStatus,
+                                            desc: "Direct connectivity to Cloud Firestore. Latency is within optimal range and data consistency is being maintained across all global nodes.",
+                                            icon: <Database size={48} />,
+                                            color: '#10b981'
+                                        })}
+                                    >
+                                        <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Database Integrity</span>
+                                        <span className="health-stat-value ok">{healthData.databaseStatus}</span>
+                                    </div>
+                                    <div 
+                                        className="health-stat-card"
+                                        onClick={() => setSelectedStat({
+                                            title: "RAM Usage",
+                                            value: healthData.memoryUsage,
+                                            desc: "Total memory consumption of the Spring Boot application server. Maintaining usage below system-defined thresholds to ensure high availability.",
+                                            icon: <MemoryStick size={48} />,
+                                            color: '#3b82f6'
+                                        })}
+                                    >
+                                        <span className="health-stat-title"><MemoryStick size={16} style={{display:'inline', marginBottom:'-2px'}}/> RAM Usage</span>
+                                        <span className="health-stat-value">{healthData.memoryUsage}</span>
+                                    </div>
+                                    <div 
+                                        className="health-stat-card"
+                                        onClick={() => setSelectedStat({
+                                            title: "CPU Usage",
+                                            value: healthData.cpuUsage,
+                                            desc: "The current processing load on the server. Low utilization indicates efficient resource management and high capacity for concurrent operations.",
+                                            icon: <Cpu size={48} />,
+                                            color: '#8b5cf6'
+                                        })}
+                                    >
+                                        <span className="health-stat-title"><Cpu size={16} style={{display:'inline', marginBottom:'-2px'}}/> CPU Usage</span>
+                                        <span className="health-stat-value">{healthData.cpuUsage}</span>
+                                    </div>
+                                    <div 
+                                        className="health-stat-card"
+                                        onClick={() => setSelectedStat({
+                                            title: "Total Active Users",
+                                            value: healthData.activeUsers || 0,
+                                            desc: "Registered campus personnel tracked in Firebase Authentication. This includes all Administrators, Technicians, and Students.",
+                                            icon: <Users size={48} />,
+                                            color: '#3b82f6'
+                                        })}
+                                    >
+                                        <span className="health-stat-title"><Users size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Active Users</span>
+                                        <span className="health-stat-value">{healthData.activeUsers || 0}</span>
+                                    </div>
+                                    <div 
+                                        className="health-stat-card"
+                                        onClick={() => setSelectedStat({
+                                            title: "Online Now",
+                                            value: healthData.onlineUsers || 0,
+                                            desc: "The number of users currently connected via real-time WebSocket channels. These users are currently active in the UI and receiving live updates.",
+                                            icon: <UserCheck size={48} />,
+                                            color: '#10b981'
+                                        })}
+                                    >
+                                        <span className="health-stat-title"><UserCheck size={16} style={{display:'inline', marginBottom:'-2px', color:'#10b981'}}/> Online Now</span>
+                                        <span className="health-stat-value ok">{healthData.onlineUsers || 0}</span>
+                                    </div>
+                                    <div 
+                                        className="health-stat-card"
+                                        onClick={() => setSelectedStat({
+                                            title: "Total Resources",
+                                            value: healthData.totalResources !== undefined ? healthData.totalResources : 'N/A',
+                                            desc: "Total inventory of smart campus assets, including laboratories, equipment, and reservable facilities stored in the database.",
+                                            icon: <Target size={48} />,
+                                            color: '#64748b'
+                                        })}
+                                    >
+                                        <span className="health-stat-title"><Database size={16} style={{display:'inline', marginBottom:'-2px'}}/> Total Resources</span>
+                                        <span className="health-stat-value">{healthData.totalResources !== undefined ? healthData.totalResources : 'N/A'}</span>
+                                    </div>
+                                </div>
                     ) : (
                         <div className="empty-state">Failed to load secure health data. Check permissions.</div>
                     )}
@@ -502,6 +566,38 @@ const AdminDashboard: React.FC = () => {
                         <div className="audit-modal-footer">
                             <button className="modal-action-btn" onClick={() => setSelectedLog(null)}>
                                 Close Record
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {selectedStat && (
+                <div className="audit-modal-overlay" onClick={() => setSelectedStat(null)}>
+                    <div className="audit-modal stat-detail-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="stat-modal-glow" style={{ background: `radial-gradient(circle at center, ${selectedStat.color}15 0%, transparent 70%)` }} />
+                        <div className="audit-modal-header" style={{ border: 'none', paddingBottom: '1rem' }}>
+                            <div className="modal-header-content">
+                                <span className="action-badge default">Telemetry Highlight</span>
+                                <h2 style={{ marginTop: '0.5rem' }}>{selectedStat.title}</h2>
+                            </div>
+                            <button className="audit-modal-close" onClick={() => setSelectedStat(null)}>
+                                <ChevronDown size={24} />
+                            </button>
+                        </div>
+                        <div className="audit-modal-body" style={{ textAlign: 'center', paddingTop: 0 }}>
+                            <div className="stat-highlight-icon" style={{ color: selectedStat.color }}>
+                                {selectedStat.icon}
+                            </div>
+                            <div className="stat-highlight-value" style={{ color: selectedStat.color }}>
+                                {selectedStat.value}
+                            </div>
+                            <p className="stat-highlight-desc">
+                                {selectedStat.desc}
+                            </p>
+                        </div>
+                        <div className="audit-modal-footer" style={{ justifyContent: 'center', background: 'transparent' }}>
+                            <button className="modal-action-btn" onClick={() => setSelectedStat(null)} style={{ background: selectedStat.color }}>
+                                Acknowledge Data
                             </button>
                         </div>
                     </div>

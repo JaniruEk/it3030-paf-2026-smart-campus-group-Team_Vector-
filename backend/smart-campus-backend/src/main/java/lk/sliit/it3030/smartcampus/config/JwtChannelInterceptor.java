@@ -8,11 +8,9 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 import java.security.Principal;
-import java.util.Map;
 
 @Component
 public class JwtChannelInterceptor implements ChannelInterceptor {
@@ -22,43 +20,41 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (accessor != null) {
-            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                String token = accessor.getFirstNativeHeader("Authorization");
-                
-                if (token != null && token.startsWith("Bearer ")) {
-                    token = token.substring(7);
-                    try {
-                        FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
-                        String userId = decodedToken.getUid();
-                        
-                        UsernamePasswordAuthenticationToken auth = 
-                            new UsernamePasswordAuthenticationToken(userId, null, null);
-                        
-                        StompHeaderAccessor mutableAccessor = StompHeaderAccessor.wrap(message);
-                        mutableAccessor.setUser(auth);
-                        Map<String, Object> sessionAttributes = mutableAccessor.getSessionAttributes();
-                        if (sessionAttributes != null) {
-                            sessionAttributes.put("USER_PRINCIPAL", auth);
-                        }
-                        
-                        return MessageBuilder.createMessage(message.getPayload(), mutableAccessor.getMessageHeaders());
-                    } catch (Exception e) {
-                        throw new IllegalArgumentException("Invalid WebSocket Token");
+        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String token = accessor.getFirstNativeHeader("Authorization");
+            
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+                try {
+                    FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
+                    String userId = decodedToken.getUid();
+                    
+                    UsernamePasswordAuthenticationToken auth = 
+                        new UsernamePasswordAuthenticationToken(userId, null, null);
+                    
+                    accessor.setUser(auth);
+                    
+                    if (accessor.getSessionAttributes() != null) {
+                        accessor.getSessionAttributes().put("USER_PRINCIPAL", auth);
                     }
-                } else {
-                    throw new IllegalArgumentException("No Authorization header found for WebSocket");
+                    
+                    System.out.println("WebSocket Authentication Success: " + userId);
+                } catch (Exception e) {
+                    System.err.println("WebSocket Authentication Failed: " + e.getMessage());
+                    throw new IllegalArgumentException("Invalid WebSocket Token");
                 }
             } else {
-                Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
-                if (sessionAttributes != null && sessionAttributes.containsKey("USER_PRINCIPAL")) {
-                    Principal auth = (Principal) sessionAttributes.get("USER_PRINCIPAL");
-                    StompHeaderAccessor mutableAccessor = StompHeaderAccessor.wrap(message);
-                    mutableAccessor.setUser(auth);
-                    return MessageBuilder.createMessage(message.getPayload(), mutableAccessor.getMessageHeaders());
-                }
+                throw new IllegalArgumentException("No Authorization header found for WebSocket");
+            }
+        } else if (accessor != null && accessor.getUser() == null) {
+            // Restore from session attributes if not a CONNECT frame and user is missing
+            if (accessor.getSessionAttributes() != null && accessor.getSessionAttributes().containsKey("USER_PRINCIPAL")) {
+                Principal auth = (Principal) accessor.getSessionAttributes().get("USER_PRINCIPAL");
+                accessor.setUser(auth);
             }
         }
+
         return message;
     }
 }
+

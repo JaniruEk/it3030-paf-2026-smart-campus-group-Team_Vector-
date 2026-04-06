@@ -51,9 +51,9 @@ public class AdminController {
         healthData.put("pendingAlerts", random.nextInt(5));
         
         // Real active connection routing telemetry
-        int onlineUsersCount = userRegistry.getUserCount();
+        int onlineUsersCount = userRegistry.getUsers().size();
         healthData.put("onlineUsers", onlineUsersCount);
-        healthData.put("activeSessions", onlineUsersCount + random.nextInt(10)); // Extrapolate base anonymous sessions
+        healthData.put("activeSessions", onlineUsersCount + random.nextInt(5)); // Extrapolate base anonymous sessions
         
         // Real total registered users from Firebase
         int totalUsers = 0;

@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { auth } from '../config/firebase';
 
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:8080/api/v1' 
+  : `http://${window.location.hostname}:8080/api/v1`;
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

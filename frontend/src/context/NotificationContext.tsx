@@ -29,10 +29,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  const getApiUrl = () => {
+    const host = window.location.hostname;
+    return host === 'localhost' ? 'http://localhost:8080/api/v1' : `http://${host}:8080/api/v1`;
+  };
+
+  const notifyUrl = getApiUrl();
+  const wsUrl = notifyUrl.replace('/api/v1', '/ws');
+
   // Initial fetch REST to get history
   const fetchNotifications = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/notifications', {
+      const response = await fetch(`${notifyUrl}/notifications`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -61,7 +69,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         await fetchNotifications(token);
 
         client = new Client({
-          webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+          webSocketFactory: () => new SockJS(wsUrl),
           connectHeaders: {
             Authorization: `Bearer ${token}`,
           },
@@ -109,7 +117,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!currentUser) return;
     try {
       const token = await currentUser.getIdToken();
-      await fetch(`http://localhost:8080/api/v1/notifications/${id}/read`, {
+      await fetch(`${notifyUrl}/notifications/${id}/read`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -123,7 +131,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!currentUser) return;
     try {
       const token = await currentUser.getIdToken();
-      await fetch(`http://localhost:8080/api/v1/notifications/${id}`, {
+      await fetch(`${notifyUrl}/notifications/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -135,7 +143,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!currentUser) return;
     try {
       const token = await currentUser.getIdToken();
-      await fetch(`http://localhost:8080/api/v1/notifications/read-all`, {
+      await fetch(`${notifyUrl}/notifications/read-all`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
