@@ -8,6 +8,7 @@ public class Booking {
 
     private String id;
     private String userId;
+    private String requesterUid;
     private String bookingResource;
 
     // @JsonFormat(pattern = "yyyy-MM-dd")
@@ -26,12 +27,13 @@ public class Booking {
     // Constructors
     public Booking() {}
 
-    public Booking(String id, String userId, String bookingResource, String date,
+    public Booking(String id, String userId, String requesterUid, String bookingResource, String date,
                    String startTime, String endTime,
                    String purpose, Integer noOfAttendees,
                    BookingStatus status, String adminReason) {
         this.id = id;
         this.userId = userId;
+        this.requesterUid = requesterUid;
         this.bookingResource = bookingResource;
         this.date = date;
         this.startTime = startTime;
@@ -49,6 +51,10 @@ public class Booking {
 
     public String getUserId() {
         return userId;
+    }
+
+    public String getRequesterUid() {
+        return requesterUid;
     }
 
     public String getBookingResource() {
@@ -90,6 +96,10 @@ public class Booking {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public void setRequesterUid(String requesterUid) {
+        this.requesterUid = requesterUid;
     }
 
     public void setBookingResource(String bookingResource) {

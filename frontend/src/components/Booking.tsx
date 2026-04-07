@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Booking_Form.css";
+import { useAuth } from "../context/AuthContext";
+import AppLayout from "./AppLayout";
+import apiClient from "../api/apiClient";
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 function BookingForm() {
+  const { currentUser } = useAuth();
   const [date, setDate] = useState("");
   const [resource, setResource] = useState("");
-  const [userID, setUserID] = useState("");
+  const [userID] = useState(currentUser?.displayName || currentUser?.email || "");
   const [year, setYear] = useState("");
   const [semester, setSemester] = useState("");
   const [startTime, setStartTime]=useState("");
@@ -14,6 +20,72 @@ function BookingForm() {
 
   const [confirmation, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [myBookings, setMyBookings] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [availableResources, setAvailableResources] = useState<any[]>([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchMyBookings();
+      fetchResources();
+    }
+  }, [currentUser]);
+
+  // Live Sync for Student View
+  useEffect(() => {
+    let client: Client | null = null;
+    if (!currentUser) return;
+
+    const setupSync = () => {
+        const host = window.location.hostname;
+        const wsUrl = host === 'localhost' ? 'http://localhost:8080/ws' : `http://${host}:8080/ws`;
+        
+        client = new Client({
+            webSocketFactory: () => new SockJS(wsUrl),
+            reconnectDelay: 5000,
+            onConnect: () => {
+                console.log("Student Sync Connected");
+                client?.subscribe(`/topic/bookings/user/updates/${currentUser.uid}`, () => {
+                    console.log("Live Sync: Refreshing personal booking history...");
+                    fetchMyBookings();
+                });
+            }
+        });
+        client.activate();
+    };
+
+    setupSync();
+    return () => {
+        if (client) client.deactivate();
+    };
+  }, [currentUser]);
+
+  const fetchResources = async () => {
+    try {
+      setLoadingResources(true);
+      const response = await apiClient.get("/resources");
+      // Filter out only available resources
+      const filtered = (response.data || []).filter((r: any) => r.status === 'Available');
+      setAvailableResources(filtered);
+    } catch (err) {
+      console.error("Failed to fetch available resources", err);
+    } finally {
+      setLoadingResources(false);
+    }
+  };
+
+  const fetchMyBookings = async () => {
+    try {
+      setLoadingHistory(true);
+      const response = await apiClient.get(`/booking/user/${currentUser?.email}`);
+      setMyBookings(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch booking history", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleSubmit =async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,20 +97,13 @@ function BookingForm() {
       return;
     }
 
-    const studentIdPattern = /^(IT|BM)[0-9]{7}$/;
-
-    if (!studentIdPattern.test(userID)) {
-      setError("⚠️ Student ID must start with IT or BM and contain 7 digits (e.g., IT1234567)");
-      setConfirm("");
-      return;
-    }
-
     // If all fields filled
     // setError("");
     // setConfirm("✅ Booking Confirmed!");
 
     const bookingData = {
-      userId: userID,
+      userId: currentUser?.email || userID,
+      requesterUid: currentUser?.uid || "",
       bookingResource: resource,
       date: date,
       startTime: startTime,
@@ -48,102 +113,180 @@ function BookingForm() {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/booking", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(bookingData)
-      });
+      const response = await apiClient.post("/booking", bookingData);
+      const result = response.data;
 
-      const result = await response.text();
-
-      setError("");
-      setConfirm(result);
-    } catch (err) {
-      setError("Failed to connect to backend");
+      if (response.status === 200 && !result.toLowerCase().includes("already booked")) {
+        setError("");
+        setConfirm("✅ " + result);
+        fetchMyBookings();
+        // Reset form
+        setDate("");
+        setResource("");
+        setStartTime("");
+        setEndTime("");
+        setPurpose("");
+        setAttendees("");
+      } else {
+        setError("⚠️ " + result);
+        setConfirm("");
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data || "Failed to connect to backend";
+      setError("⚠️ " + errorMsg);
       setConfirm("");
     }
     
   };
 
   return (
+    <AppLayout activeTab="none">
     <div className="booking_container">
-      <form className="booking_container_form" onSubmit={handleSubmit}>
-        
-        {/* Date Selection */}
-        <div className="booking_container_select_date">
-          <label>Select Date:</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+      <div className="admin-card">
+          <div className="card-header">
+              <h3 style={{ margin: 0 }}>Campus Facility Booking</h3>
+              <p style={{ margin: 0, marginTop: '4px' }}>Reserve laboratories, meeting rooms, and auditoriums.</p>
+          </div>
+      </div>
 
-          {/* Venue */}
-          <label>Select Resource:</label>
-          <select value={resource} onChange={(e) => setResource(e.target.value)}>
-            <option value=""></option>
-            <option>A101</option>
-            <option>A102</option>
-            <option>B201</option>
-            <option>B202</option>
-            <option>Meeting Room</option>
-            <option>Auditorium</option>
-          </select>
+      <form className="booking_container_form" onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
+        
+        {/* Date & Resource Selection */}
+        <div className="booking_container_select_date">
+          <div className="form-group">
+            <label>Select Date:</label>
+            <input
+              type="date"
+              value={date}
+              required
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Select Resource:</label>
+            <select value={resource} required onChange={(e) => setResource(e.target.value)}>
+              <option value="">{loadingResources ? "Loading..." : "Select a Venue"}</option>
+              {availableResources.map((res: any) => (
+                <option key={res.id} value={res.name}>
+                  {res.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* User_Inputs  */}
+        {/* User_Inputs Grid */}
         <div className="booking_container_details_form">
-          <label>Student ID:</label>
-          <input
-            type="text"
-            className="user_details"
-            value={userID}
-            onChange={(e) => setUserID(e.target.value)}
-          />
+          <div className="form-group">
+            <label>Requester Identity:</label>
+            <input
+              type="text"
+              className="user_details"
+              value={userID}
+              readOnly
+              style={{ background: '#f1f5f9', cursor: 'not-allowed' }}
+            />
+          </div>
 
-          <label>Year:</label>
-          <select value={year} onChange={(e) => setYear(e.target.value)}>
-            <option value=""></option>
-            <option>1st Year</option>
-            <option>2nd Year</option>
-            <option>3rd Year</option>
-            <option>4th Year</option>
-          </select>
+          <div className="form-group">
+            <label>Year of Study:</label>
+            <select value={year} required onChange={(e) => setYear(e.target.value)}>
+              <option value=""></option>
+              <option>1st Year</option>
+              <option>2nd Year</option>
+              <option>3rd Year</option>
+              <option>4th Year</option>
+            </select>
+          </div>
 
-          <label>Semester:</label>
-          <select value={semester} onChange={(e) => setSemester(e.target.value)}>
-            <option value=""></option>
-            <option>1st Semester</option>
-            <option>2nd Semester</option>
-          </select>
+          <div className="form-group">
+            <label>Semester:</label>
+            <select value={semester} required onChange={(e) => setSemester(e.target.value)}>
+              <option value=""></option>
+              <option>1st Semester</option>
+              <option>2nd Semester</option>
+            </select>
+          </div>
 
-          <label>Start Time:</label>
-          <input type="time" onChange={(e) => setStartTime(e.target.value)} />
+          <div className="form-group">
+            <label>Time Slot (Start):</label>
+            <input type="time" value={startTime} required onChange={(e) => setStartTime(e.target.value)} />
+          </div>
 
-          <label>End Time:</label>
-          <input type="time" onChange={(e) => setEndTime(e.target.value)} />
+          <div className="form-group">
+            <label>Time Slot (End):</label>
+            <input type="time" value={endTime} required onChange={(e) => setEndTime(e.target.value)} />
+          </div>
 
-          <label>Purpose:</label>
-          <input type="text" onChange={(e) => setPurpose(e.target.value)} />
+          <div className="form-group">
+            <label>Expected Attendees:</label>
+            <input type="number" value={attendees} required min="1" onChange={(e) => setAttendees(e.target.value)} />
+          </div>
 
-          <label>No of Attendees:</label>
-          <input type="number" onChange={(e) => setAttendees(e.target.value)} />
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label>Purpose of Booking:</label>
+            <input type="text" value={purpose} required placeholder="e.g., Group Study, Workshop" onChange={(e) => setPurpose(e.target.value)} />
+          </div>
         </div>
 
         {/* Submit Button */}
         <button type="submit" className="booking_container_confirm_button">
-          Confirm
+          Submit Booking Request
         </button>
 
         {/*  Error Message */}
-        {error && <p className="error_msg">{error}</p>}
+        {error && <p className="error_msg" style={{ color: '#ef4444', fontWeight: 600 }}>{error}</p>}
 
         {/* Success Message */}
-        {confirmation && <p className="confirmation_msg">{confirmation}</p>}
+        {confirmation && <p className="confirmation_msg" style={{ color: '#10b981', fontWeight: 600 }}>{confirmation}</p>}
       </form>
+
+      <div className="admin-card" style={{ marginTop: '3rem' }}>
+        <div className="card-header">
+            <h3>My Booking History</h3>
+            <p>Track the status of your facility reservations.</p>
+        </div>
+        
+        {loadingHistory ? (
+          <div className="loading-state">Retrieving your records...</div>
+        ) : myBookings.length === 0 ? (
+          <div className="empty-state">You have no booking history.</div>
+        ) : (
+          <div className="table-responsive">
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Resource</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myBookings.map((b) => (
+                  <tr key={b.id}>
+                    <td>{b.date}</td>
+                    <td style={{ fontWeight: 600 }}>{b.bookingResource}</td>
+                    <td>{b.startTime} - {b.endTime}</td>
+                    <td>
+                      <span className={`status-pill status-${b.status?.toLowerCase()}`}>
+                        {b.status}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                      {b.adminReason || (b.status === 'PENDING' ? 'Awaiting Review' : '-')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
+    </AppLayout>
   );
 }
 

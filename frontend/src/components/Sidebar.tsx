@@ -7,15 +7,17 @@ import {
     ChevronRight, 
     LogOut, 
     ClipboardList,
-    Home
+    Home,
+    Calendar,
+    Package
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
 interface SidebarProps {
-    activeTab?: 'overview' | 'audit' | 'broadcast' | 'none';
-    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast') => void;
+    activeTab?: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'none';
+    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
@@ -34,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
     }, [isCollapsed]);
 
-    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast') => {
+    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => {
         if (location.pathname !== '/admin') {
             navigate(`/admin?tab=${tab}`);
         } else {
@@ -99,6 +101,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                     <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
                         <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
                     </button>
+                    <button className={`tab-btn ${activeTab === 'bookings' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('bookings')} title="Facility Bookings">
+                        <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facility Bookings</span>}
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'assets' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('assets')} title="Asset Management">
+                        <Package size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Asset Management</span>}
+                    </button>
                     <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">
                         <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Manage Tickets</span>}
                     </Link>
@@ -114,9 +122,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
             {/* USER SPECIFIC TABS */}
             {userRole === 'USER' && (
-                <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/tickets" title="My Tickets">
-                    <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>My Tickets</span>}
-                </Link>
+                <>
+                    <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/tickets" title="My Tickets">
+                        <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>My Tickets</span>}
+                    </Link>
+                    <Link className={`tab-btn ${location.pathname === '/Booking_Form' ? 'active' : ''}`} to="/Booking_Form" title="Campus Booking">
+                        <Calendar size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Campus Booking</span>}
+                    </Link>
+                </>
             )}
 
             

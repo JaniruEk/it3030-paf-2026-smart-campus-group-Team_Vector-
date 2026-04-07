@@ -26,6 +26,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tickets" element={<Tickets />} />
+              <Route path="/Booking_Form" element={<BookingForm />} />
             </Route>
 
             {/* Secure Technician Area */}
@@ -40,8 +41,6 @@ function App() {
             </Route>
             
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-
-             <Route path="/Booking_Form" element={<BookingForm />} />
           </Routes>
         </BrowserRouter>
       </NotificationProvider>

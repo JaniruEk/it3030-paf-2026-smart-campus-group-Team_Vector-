@@ -67,7 +67,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/v1/auth/public/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
-                .requestMatchers("/booking", "/booking/**").permitAll()
+                .requestMatchers("/api/v1/booking/**").authenticated()
+                .requestMatchers("/api/v1/resources/**").hasAnyAuthority("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

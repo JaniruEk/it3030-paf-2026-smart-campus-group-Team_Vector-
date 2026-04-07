@@ -7,8 +7,8 @@ import '../pages/AdminDashboard.css';
 
 interface AppLayoutProps {
     children: React.ReactNode;
-    activeTab?: 'overview' | 'audit' | 'broadcast' | 'none';
-    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast') => void;
+    activeTab?: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'none';
+    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => void;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children, activeTab, setActiveTab }) => {

@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
 interface AdminSidebarProps {
-    activeTab?: 'overview' | 'audit' | 'broadcast';
-    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast') => void;
+    activeTab?: 'overview' | 'audit' | 'broadcast' | 'bookings';
+    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast' | 'bookings') => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) => {
@@ -24,7 +24,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
         localStorage.setItem('admin_sidebar_collapsed', isCollapsed.toString());
     }, [isCollapsed]);
 
-    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast') => {
+    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings') => {
         if (location.pathname !== '/admin') {
             navigate(`/admin?tab=${tab}`);
         } else {
@@ -77,6 +77,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
             </button>
             <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
                 <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
+            </button>
+            <button className={`tab-btn ${activeTab === 'bookings' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('bookings')} title="Facility Bookings">
+                <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facility Bookings</span>}
             </button>
             <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">
                 <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Manage Tickets</span>}

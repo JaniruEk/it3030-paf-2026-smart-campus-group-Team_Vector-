@@ -10,55 +10,74 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import lk.sliit.it3030.smartcampus.model.Booking;
 import lk.sliit.it3030.smartcampus.model.BookingStatus;
+import lk.sliit.it3030.smartcampus.model.Resource;
 import lk.sliit.it3030.smartcampus.repository.BookingRepository;
-import java.time.LocalDate;
+import lk.sliit.it3030.smartcampus.repository.ResourceRepository;
+import lk.sliit.it3030.smartcampus.service.NotificationService;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import java.time.LocalTime;
 
 @RestController
-@RequestMapping("/booking")
+@RequestMapping("/api/v1/booking")
 @CrossOrigin(origins="http://localhost:5173")
 public class BookingController {
 
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private ResourceRepository resourceRepository;
+
     @PostMapping
     public String createBooking(@RequestBody Booking booking) {
         try {
             LocalTime newStart = LocalTime.parse(booking.getStartTime());
             LocalTime newEnd = LocalTime.parse(booking.getEndTime());
-            LocalDate newDate = LocalDate.parse(booking.getDate());
 
             if (newStart.isAfter(newEnd) || newStart.equals(newEnd)) {
                 return "End time must be after start time";
             }
 
-            List<Booking> existingBookings = bookingRepository.findAll();
+            // 1. Availability Check
+            Resource resource = resourceRepository.findByName(booking.getBookingResource());
+            if (resource != null && !"Available".equalsIgnoreCase(resource.getStatus())) {
+                return "Resource '" + booking.getBookingResource() + "' is currently " + resource.getStatus();
+            }
+
+            // 2. Conflict Detection (Optimized with findByResourceAndDate)
+            List<Booking> existingBookings = bookingRepository.findByResourceAndDate(booking.getBookingResource(), booking.getDate());
 
             if (existingBookings != null && !existingBookings.isEmpty()) {
                 for (Booking b : existingBookings) {
-                    LocalTime oldStart = LocalTime.parse(b.getStartTime());
-                    LocalTime oldEnd = LocalTime.parse(b.getEndTime());
-                    LocalDate oldDate = LocalDate.parse(b.getDate());
+                    // Only check processed or pending bookings
+                    if (b.getStatus() == BookingStatus.REJECT) continue;
 
-                    if (b.getBookingResource().equals(booking.getBookingResource())
-                            && oldDate.equals(newDate)) {
+                    LocalTime extStart = LocalTime.parse(b.getStartTime());
+                    LocalTime extEnd = LocalTime.parse(b.getEndTime());
 
-                        if (newStart.isBefore(oldEnd) && newEnd.isAfter(oldStart)) {
-                            if (b.getStatus() == BookingStatus.APPROVED
-                                    || b.getStatus() == BookingStatus.PENDING) {
-                                return "Resource already booked for this time";
-                            }
-                        }
+                    // Overlap Condition: (StartA < EndB) and (EndA > StartB)
+                    if (newStart.isBefore(extEnd) && newEnd.isAfter(extStart)) {
+                        return "Resource already booked from " + b.getStartTime() + " to " + b.getEndTime();
                     }
                 }
             }
 
             booking.setStatus(BookingStatus.PENDING);
             bookingRepository.save(booking);
+
+            // Broadcast real-time update signal for Admin Dashboard
+            messagingTemplate.convertAndSend("/topic/bookings/admin/updates", "BOOKING_CREATED");
 
             return "Booking request submitted successfully";
         } catch (ExecutionException | InterruptedException e) {
@@ -80,6 +99,67 @@ public class BookingController {
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    @GetMapping("/all")
+    public List<Booking> getAllBookings() {
+        try {
+            return bookingRepository.findAll();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/user/{userId}")
+    public List<Booking> getUserBookings(@PathVariable String userId) {
+        try {
+            return bookingRepository.findByUserId(userId);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @PatchMapping("/{id}/status")
+    public String updateBookingStatus(@PathVariable String id, @RequestParam BookingStatus status, @RequestParam(required = false) String adminReason) {
+        try {
+            // 1. Fetch booking to get requester information
+            Booking booking = bookingRepository.findByID(id);
+            if (booking == null) return "Booking not found";
+
+            // 2. Update status
+            String result = bookingRepository.updateStatus(id, status, adminReason);
+
+            // 3. Send Notification
+            String message = String.format("Your booking for %s on %s has been %s.", 
+                booking.getBookingResource(), 
+                booking.getDate(), 
+                status.toString().toLowerCase());
+            
+            if (status == BookingStatus.REJECT && adminReason != null && !adminReason.isEmpty()) {
+                message += " Reason: " + adminReason;
+            }
+
+            if (booking.getRequesterUid() != null && !booking.getRequesterUid().isEmpty()) {
+                notificationService.createNotification(
+                    booking.getRequesterUid(), 
+                    message, 
+                    "BOOKING_UPDATE"
+                );
+            }
+
+            // Sync Broadcasts
+            messagingTemplate.convertAndSend("/topic/bookings/admin/updates", "BOOKING_UPDATED");
+            if (booking.getRequesterUid() != null) {
+                messagingTemplate.convertAndSend("/topic/bookings/user/updates/" + booking.getRequesterUid(), "STATUS_CHANGE");
+            }
+
+            return result;
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return "Error updating status and sending notification";
         }
     }
 }
