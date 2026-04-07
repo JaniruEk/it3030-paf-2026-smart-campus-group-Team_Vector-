@@ -25,9 +25,17 @@ function BookingForm() {
       return;
     }
 
+    const studentIdPattern = /^(IT|BM)[0-9]{7}$/;
+
+    if (!studentIdPattern.test(userID)) {
+      setError("⚠️ Student ID must start with IT or BM and contain 7 digits (e.g., IT1234567)");
+      setConfirm("");
+      return;
+    }
+
     // If all fields filled
-    setError("");
-    setConfirm("✅ Booking Confirmed!");
+    // setError("");
+    // setConfirm("✅ Booking Confirmed!");
 
     const bookingData = {
       userId: userID,
@@ -87,7 +95,7 @@ function BookingForm() {
 
         {/* User_Inputs  */}
         <div className="booking_container_details_form">
-          <label>Name:</label>
+          <label>Student ID:</label>
           <input
             type="text"
             className="user_details"
@@ -96,20 +104,20 @@ function BookingForm() {
           />
 
           <label>Year:</label>
-          <input
-            type="text"
-            className="user_details"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-          />
+          <select value={year} onChange={(e) => setYear(e.target.value)}>
+            <option value=""></option>
+            <option>1st Year</option>
+            <option>2nd Year</option>
+            <option>3rd Year</option>
+            <option>4th Year</option>
+          </select>
 
           <label>Semester:</label>
-          <input
-            type="text"
-            className="user_details"
-            value={semester}
-            onChange={(e) => setSemester(e.target.value)}
-          />
+          <select value={semester} onChange={(e) => setSemester(e.target.value)}>
+            <option value=""></option>
+            <option>1st Semester</option>
+            <option>2nd Semester</option>
+          </select>
 
           <label>Start Time:</label>
           <input type="time" onChange={(e) => setStartTime(e.target.value)} />

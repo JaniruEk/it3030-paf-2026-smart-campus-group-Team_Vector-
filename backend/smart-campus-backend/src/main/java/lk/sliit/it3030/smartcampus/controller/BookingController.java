@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import lk.sliit.it3030.smartcampus.model.Booking;
 import lk.sliit.it3030.smartcampus.model.BookingStatus;
 import lk.sliit.it3030.smartcampus.repository.BookingRepository;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @RestController
 @RequestMapping("/booking")
@@ -26,21 +28,26 @@ public class BookingController {
     @PostMapping
     public String createBooking(@RequestBody Booking booking) {
         try {
-            if (booking.getStartTime().isAfter(booking.getEndTime())
-                || booking.getStartTime().equals(booking.getEndTime())) {
-            return "End time must be after start time";
+            LocalTime newStart = LocalTime.parse(booking.getStartTime());
+            LocalTime newEnd = LocalTime.parse(booking.getEndTime());
+            LocalDate newDate = LocalDate.parse(booking.getDate());
+
+            if (newStart.isAfter(newEnd) || newStart.equals(newEnd)) {
+                return "End time must be after start time";
             }
+
             List<Booking> existingBookings = bookingRepository.findAll();
 
-            if(existingBookings != null && !existingBookings.isEmpty()){
+            if (existingBookings != null && !existingBookings.isEmpty()) {
                 for (Booking b : existingBookings) {
-                
+                    LocalTime oldStart = LocalTime.parse(b.getStartTime());
+                    LocalTime oldEnd = LocalTime.parse(b.getEndTime());
+                    LocalDate oldDate = LocalDate.parse(b.getDate());
+
                     if (b.getBookingResource().equals(booking.getBookingResource())
-                            && b.getDate().equals(booking.getDate())) {
+                            && oldDate.equals(newDate)) {
 
-                        if (booking.getStartTime().isBefore(b.getEndTime())
-                                && booking.getEndTime().isAfter(b.getStartTime())) {
-
+                        if (newStart.isBefore(oldEnd) && newEnd.isAfter(oldStart)) {
                             if (b.getStatus() == BookingStatus.APPROVED
                                     || b.getStatus() == BookingStatus.PENDING) {
                                 return "Resource already booked for this time";
@@ -49,12 +56,11 @@ public class BookingController {
                     }
                 }
             }
-        
+
             booking.setStatus(BookingStatus.PENDING);
             bookingRepository.save(booking);
 
             return "Booking request submitted successfully";
-
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
             return "Error while creating booking";

@@ -10,12 +10,12 @@ public class Booking {
     private String userId;
     private String bookingResource;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate date;
-    @JsonFormat(pattern ="HH:mm")
-    private LocalTime startTime;
-    @JsonFormat(pattern ="HH:mm")
-    private LocalTime endTime;
+    // @JsonFormat(pattern = "yyyy-MM-dd")
+    private String date;
+    // @JsonFormat(pattern ="HH:mm")
+    private String startTime;
+    // @JsonFormat(pattern ="HH:mm")
+    private String endTime;
 
     private String purpose;
     private Integer noOfAttendees;
@@ -26,8 +26,8 @@ public class Booking {
     // Constructors
     public Booking() {}
 
-    public Booking(String id, String userId, String bookingResource, LocalDate date,
-                   LocalTime startTime, LocalTime endTime,
+    public Booking(String id, String userId, String bookingResource, String date,
+                   String startTime, String endTime,
                    String purpose, Integer noOfAttendees,
                    BookingStatus status, String adminReason) {
         this.id = id;
@@ -55,15 +55,15 @@ public class Booking {
         return bookingResource;
     }
 
-    public LocalDate getDate() {
+    public String getDate() {
         return date;
     }
 
-    public LocalTime getStartTime() {
+    public String getStartTime() {
         return startTime;
     }
 
-    public LocalTime getEndTime() {
+    public String getEndTime() {
         return endTime;
     }
 
@@ -96,15 +96,15 @@ public class Booking {
         this.bookingResource = bookingResource;
     }
 
-    public void setDate(LocalDate date) {
+    public void setDate(String date) {
         this.date = date;
     }
 
-    public void setStartTime(LocalTime startTime) {
+    public void setStartTime(String startTime) {
         this.startTime = startTime;
     }
 
-    public void setEndTime(LocalTime endTime) {
+    public void setEndTime(String endTime) {
         this.endTime = endTime;
     }
 
