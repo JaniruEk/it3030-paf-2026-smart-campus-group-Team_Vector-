@@ -105,15 +105,47 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
 
   return (
     <div className="audit-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
-      <div className="audit-modal-content" style={{ width: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div
+        className="audit-modal-content"
+        style={{
+          width: '600px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          position: 'relative',
+          background: 'rgba(255, 255, 255, 0.92)',
+          border: '1px solid rgba(255, 255, 255, 0.75)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+          padding: '2rem'
+        }}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close report incident form"
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            width: '36px',
+            height: '36px',
+            borderRadius: '999px',
+            border: '1px solid #e2e8f0',
+            background: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#475569'
+          }}
+        >
+          <X size={20} />
+        </button>
+
+        <div className="modal-header" style={{ marginBottom: '2rem', paddingRight: '3rem' }}>
           <div>
             <h2 style={{ margin: 0, color: '#0f172a' }}>Report New Incident</h2>
             <p style={{ margin: '0.25rem 0 0 0', color: '#64748b' }}>Provide details about the maintenance issue.</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-            <X size={24} />
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="broadcast-form-section">

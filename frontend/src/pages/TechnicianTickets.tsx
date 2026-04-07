@@ -16,6 +16,10 @@ const TechnicianTickets = () => {
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
+  const [resolveTicketId, setResolveTicketId] = useState<string | null>(null);
+  const [resolutionNotes, setResolutionNotes] = useState('');
 
   const loadTickets = async () => {
     try {
@@ -33,23 +37,25 @@ const TechnicianTickets = () => {
     loadTickets();
   }, []);
 
+  const closeResolveModal = () => {
+    if (updatingTicketId) return;
+    setIsResolveModalOpen(false);
+    setResolveTicketId(null);
+    setResolutionNotes('');
+  };
+
   const handleUpdateStatus = async (ticketId: string, status: string) => {
-    let resolutionNotes = '';
     if (status === 'RESOLVED') {
-      const notes = window.prompt('Please enter resolution notes:');
-      if (notes === null) return;
-      resolutionNotes = notes.trim();
-      if (!resolutionNotes) {
-        toast.error('Resolution notes are required to resolve the ticket');
-        return;
-      }
+      setResolveTicketId(ticketId);
+      setResolutionNotes('');
+      setIsResolveModalOpen(true);
+      return;
     }
 
     try {
       setUpdatingTicketId(ticketId);
       const updatedTicket = await updateTicketStatusByTechnician(ticketId, {
         status,
-        resolutionNotes,
       });
       setTickets((prev) => prev.map((t) => (t.id === ticketId ? updatedTicket : t)));
       toast.success(`Ticket status updated to ${status}`);
@@ -62,6 +68,36 @@ const TechnicianTickets = () => {
 
   const handleTicketUpdate = (updatedTicket: MaintenanceTicket) => {
     setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+  };
+
+  const toggleComments = (ticketId: string) => {
+    setExpandedComments((prev) => ({ ...prev, [ticketId]: !prev[ticketId] }));
+  };
+
+  const handleResolveSubmit = async () => {
+    if (!resolveTicketId) return;
+    const trimmedNotes = resolutionNotes.trim();
+    if (!trimmedNotes) {
+      toast.error('Resolution notes are required to resolve the ticket');
+      return;
+    }
+
+    try {
+      setUpdatingTicketId(resolveTicketId);
+      const updatedTicket = await updateTicketStatusByTechnician(resolveTicketId, {
+        status: 'RESOLVED',
+        resolutionNotes: trimmedNotes,
+      });
+      setTickets((prev) => prev.map((t) => (t.id === resolveTicketId ? updatedTicket : t)));
+      toast.success('Ticket status updated to RESOLVED');
+      setIsResolveModalOpen(false);
+      setResolveTicketId(null);
+      setResolutionNotes('');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    } finally {
+      setUpdatingTicketId(null);
+    }
   };
 
   return (
@@ -152,16 +188,6 @@ const TechnicianTickets = () => {
                         Complete & Resolve
                       </button>
                     )}
-                    {(ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') && (
-                      <button 
-                        className="status-action-btn"
-                        onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
-                        disabled={updatingTicketId === ticket.id}
-                        style={{ background: '#64748b' }}
-                      >
-                        Re-open Assignment
-                      </button>
-                    )}
                   </div>
 
                   {ticket.resolutionNotes && (
@@ -171,13 +197,68 @@ const TechnicianTickets = () => {
                     </div>
                   )}
 
-                  <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                  <button
+                    type="button"
+                    onClick={() => toggleComments(ticket.id)}
+                    aria-expanded={expandedComments[ticket.id] || false}
+                    style={{
+                      marginBottom: '1rem',
+                      background: '#f8fafc',
+                      color: '#0f172a',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      padding: '0.65rem 0.9rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {expandedComments[ticket.id]
+                      ? `Hide Comments (${ticket.ticketMessages?.length || 0}) ▲`
+                      : `Show Comments (${ticket.ticketMessages?.length || 0}) ▼`}
+                  </button>
+
+                  {expandedComments[ticket.id] && (
+                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                  )}
                 </article>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {isResolveModalOpen && (
+        <div className="resolve-modal-overlay" onClick={closeResolveModal}>
+          <div className="resolve-modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Complete & Resolve Ticket</h3>
+            <p>Add a short resolution message before closing this ticket.</p>
+            <textarea
+              value={resolutionNotes}
+              onChange={(e) => setResolutionNotes(e.target.value)}
+              placeholder="Enter resolution details..."
+              disabled={!!updatingTicketId}
+            />
+            <div className="resolve-modal-actions">
+              <button
+                type="button"
+                className="resolve-cancel-btn"
+                onClick={closeResolveModal}
+                disabled={!!updatingTicketId}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="status-action-btn resolve-action"
+                onClick={handleResolveSubmit}
+                disabled={!!updatingTicketId}
+              >
+                {updatingTicketId ? 'Submitting...' : 'Submit & Resolve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 };

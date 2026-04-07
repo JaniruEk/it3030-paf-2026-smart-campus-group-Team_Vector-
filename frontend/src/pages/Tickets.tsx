@@ -10,10 +10,6 @@ import CreateTicketModal from '../components/CreateTicketModal';
 import './Tickets.css';
 import './AdminDashboard.css';
 
-const CATEGORY_OPTIONS = ['ELECTRICAL', 'PLUMBING', 'CLEANING', 'IT_SUPPORT', 'FURNITURE', 'SECURITY', 'OTHER'];
-const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
-const MAX_ATTACHMENTS = 3;
-
 const formatDate = (value?: string): string => {
   if (!value) return 'N/A';
   const date = new Date(value);
@@ -24,6 +20,7 @@ const Tickets = () => {
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -48,6 +45,10 @@ const Tickets = () => {
 
   const handleTicketUpdate = (updatedTicket: MaintenanceTicket) => {
     setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+  };
+
+  const toggleComments = (ticketId: string) => {
+    setExpandedComments((prev) => ({ ...prev, [ticketId]: !prev[ticketId] }));
   };
 
   return (
@@ -130,7 +131,29 @@ const Tickets = () => {
                     </div>
                   )}
 
-                  <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                  <button
+                    type="button"
+                    onClick={() => toggleComments(ticket.id)}
+                    aria-expanded={expandedComments[ticket.id] || false}
+                    style={{
+                      marginBottom: '1rem',
+                      background: '#f8fafc',
+                      color: '#0f172a',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      padding: '0.65rem 0.9rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {expandedComments[ticket.id]
+                      ? `Hide Comments (${ticket.ticketMessages?.length || 0}) ▲`
+                      : `Show Comments (${ticket.ticketMessages?.length || 0}) ▼`}
+                  </button>
+
+                  {expandedComments[ticket.id] && (
+                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                  )}
                 </article>
               ))}
             </div>

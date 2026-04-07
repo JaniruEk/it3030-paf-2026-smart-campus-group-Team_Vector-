@@ -79,8 +79,6 @@ const CommentSection = ({ ticket, onUpdate }: CommentSectionProps) => {
 
   return (
     <div className="comment-section">
-      <h4>Comments ({ticket.ticketMessages?.length || 0})</h4>
-      
       <div className="comment-list">
         {ticket.ticketMessages?.map((msg, index) => {
           const isOwner = currentUser?.uid === msg.senderId;

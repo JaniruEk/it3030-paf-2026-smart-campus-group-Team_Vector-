@@ -5,7 +5,7 @@ import apiClient from '../api/apiClient';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import './AdminTickets.css';
 import './AdminDashboard.css';
 
@@ -52,6 +52,7 @@ const AdminTickets = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [actionTicketId, setActionTicketId] = useState<string | null>(null);
   const [selectedTechByTicket, setSelectedTechByTicket] = useState<Record<string, string>>({});
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
 
   const ticketCountByStatus = useMemo(() => {
     return tickets.reduce<Record<string, number>>((acc, ticket) => {
@@ -134,6 +135,10 @@ const AdminTickets = () => {
 
   const handleTicketUpdate = (updatedTicket: MaintenanceTicket) => {
     setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+  };
+
+  const toggleComments = (ticketId: string) => {
+    setExpandedComments((prev) => ({ ...prev, [ticketId]: !prev[ticketId] }));
   };
 
   const handleRejectTicket = async (ticketId: string, currentStatus: TicketDisplayStatus) => {
@@ -275,7 +280,32 @@ const AdminTickets = () => {
                       </div>
                     )}
 
-                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                    <button
+                      type="button"
+                      onClick={() => toggleComments(ticketId)}
+                      aria-expanded={expandedComments[ticketId] || false}
+                      style={{
+                        marginTop: '0.5rem',
+                        marginBottom: '1rem',
+                        background: '#f8fafc',
+                        color: '#0f172a',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        padding: '0.65rem 0.9rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      {expandedComments[ticketId] ? 'Hide All Comments' : 'Show All Comments'}
+                      {expandedComments[ticketId] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+
+                    {expandedComments[ticketId] && (
+                      <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                    )}
 
                     {isOpen && (
                       <div className="admin-ticket-actions">
