@@ -22,13 +22,10 @@ function BookingForm() {
   const [error, setError] = useState("");
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [availableResources, setAvailableResources] = useState<any[]>([]);
-  const [loadingResources, setLoadingResources] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
       fetchMyBookings();
-      fetchResources();
     }
   }, [currentUser]);
 
@@ -60,20 +57,6 @@ function BookingForm() {
         if (client) client.deactivate();
     };
   }, [currentUser]);
-
-  const fetchResources = async () => {
-    try {
-      setLoadingResources(true);
-      const response = await apiClient.get("/resources");
-      // Filter out only available resources
-      const filtered = (response.data || []).filter((r: any) => r.status === 'Available');
-      setAvailableResources(filtered);
-    } catch (err) {
-      console.error("Failed to fetch available resources", err);
-    } finally {
-      setLoadingResources(false);
-    }
-  };
 
   const fetchMyBookings = async () => {
     try {
@@ -166,12 +149,13 @@ function BookingForm() {
           <div className="form-group">
             <label>Select Resource:</label>
             <select value={resource} required onChange={(e) => setResource(e.target.value)}>
-              <option value="">{loadingResources ? "Loading..." : "Select a Venue"}</option>
-              {availableResources.map((res: any) => (
-                <option key={res.id} value={res.name}>
-                  {res.name}
-                </option>
-              ))}
+              <option value="">Select a Venue</option>
+              <option>A101 - Lecture Hall</option>
+              <option>A102 - Lecture Hall</option>
+              <option>B201 - Computer Lab</option>
+              <option>B202 - Physics Lab</option>
+              <option>Meeting Room - Block C</option>
+              <option>Auditorium - Main</option>
             </select>
           </div>
         </div>

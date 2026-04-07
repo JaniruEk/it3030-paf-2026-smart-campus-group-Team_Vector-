@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutionException;
 import org.springframework.stereotype.Repository;
 
 import com.google.api.core.ApiFuture;
+import com.google.api.core.ApiFutures;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
@@ -47,21 +48,6 @@ public class BookingRepository {
         }
 
         return userBookings;
-    }
-
-    public List<Booking> findByResourceAndDate(String resource, String date) throws ExecutionException, InterruptedException {
-        List<Booking> bookings = new ArrayList<>();
-        ApiFuture<QuerySnapshot> future = firestore.collection(collection)
-                .whereEqualTo("bookingResource", resource)
-                .whereEqualTo("date", date)
-                .get();
-        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-
-        for (QueryDocumentSnapshot doc : documents) {
-            bookings.add(doc.toObject(Booking.class));
-        }
-
-        return bookings;
     }
 
     public String save(Booking bookingInfo) throws ExecutionException, InterruptedException {

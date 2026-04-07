@@ -15,11 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import lk.sliit.it3030.smartcampus.model.Booking;
 import lk.sliit.it3030.smartcampus.model.BookingStatus;
-import lk.sliit.it3030.smartcampus.model.Resource;
 import lk.sliit.it3030.smartcampus.repository.BookingRepository;
-import lk.sliit.it3030.smartcampus.repository.ResourceRepository;
 import lk.sliit.it3030.smartcampus.service.NotificationService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @RestController
@@ -36,39 +35,34 @@ public class BookingController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    @Autowired
-    private ResourceRepository resourceRepository;
-
     @PostMapping
     public String createBooking(@RequestBody Booking booking) {
         try {
             LocalTime newStart = LocalTime.parse(booking.getStartTime());
             LocalTime newEnd = LocalTime.parse(booking.getEndTime());
+            LocalDate newDate = LocalDate.parse(booking.getDate());
 
             if (newStart.isAfter(newEnd) || newStart.equals(newEnd)) {
                 return "End time must be after start time";
             }
 
-            // 1. Availability Check
-            Resource resource = resourceRepository.findByName(booking.getBookingResource());
-            if (resource != null && !"Available".equalsIgnoreCase(resource.getStatus())) {
-                return "Resource '" + booking.getBookingResource() + "' is currently " + resource.getStatus();
-            }
-
-            // 2. Conflict Detection (Optimized with findByResourceAndDate)
-            List<Booking> existingBookings = bookingRepository.findByResourceAndDate(booking.getBookingResource(), booking.getDate());
+            List<Booking> existingBookings = bookingRepository.findAll();
 
             if (existingBookings != null && !existingBookings.isEmpty()) {
                 for (Booking b : existingBookings) {
-                    // Only check processed or pending bookings
-                    if (b.getStatus() == BookingStatus.REJECT) continue;
+                    LocalTime oldStart = LocalTime.parse(b.getStartTime());
+                    LocalTime oldEnd = LocalTime.parse(b.getEndTime());
+                    LocalDate oldDate = LocalDate.parse(b.getDate());
 
-                    LocalTime extStart = LocalTime.parse(b.getStartTime());
-                    LocalTime extEnd = LocalTime.parse(b.getEndTime());
+                    if (b.getBookingResource().equals(booking.getBookingResource())
+                            && oldDate.equals(newDate)) {
 
-                    // Overlap Condition: (StartA < EndB) and (EndA > StartB)
-                    if (newStart.isBefore(extEnd) && newEnd.isAfter(extStart)) {
-                        return "Resource already booked from " + b.getStartTime() + " to " + b.getEndTime();
+                        if (newStart.isBefore(oldEnd) && newEnd.isAfter(oldStart)) {
+                            if (b.getStatus() == BookingStatus.APPROVED
+                                    || b.getStatus() == BookingStatus.PENDING) {
+                                return "Resource already booked for this time";
+                            }
+                        }
                     }
                 }
             }

@@ -50,15 +50,6 @@ public class ResourceRepository {
         return resourceList;
     }
 
-    public Resource findByName(String name) throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME).whereEqualTo("name", name).get();
-        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-        if (!documents.isEmpty()) {
-            return documents.get(0).toObject(Resource.class);
-        }
-        return null;
-    }
-
     public String deleteById(String id) throws ExecutionException, InterruptedException {
         ApiFuture<WriteResult> writeResult = firestore.collection(COLLECTION_NAME).document(id).delete();
         return "Deleted at " + writeResult.get().getUpdateTime().toString();
