@@ -10,9 +10,7 @@ import CreateTicketModal from '../components/CreateTicketModal';
 import './Tickets.css';
 import './AdminDashboard.css';
 
-const CATEGORY_OPTIONS = ['ELECTRICAL', 'PLUMBING', 'CLEANING', 'IT_SUPPORT', 'FURNITURE', 'SECURITY', 'OTHER'];
-const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
-const MAX_ATTACHMENTS = 3;
+
 
 const formatDate = (value?: string): string => {
   if (!value) return 'N/A';
