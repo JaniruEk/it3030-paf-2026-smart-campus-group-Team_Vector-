@@ -25,8 +25,8 @@ const NotificationContext = createContext<NotificationContextType>({} as Notific
 
 export const useNotifications = () => useContext(NotificationContext);
 
-export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser } = useAuth();
+  export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser, userRole } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const getApiUrl = () => {
@@ -75,27 +75,51 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           },
           reconnectDelay: 5000,
           onConnect: () => {
-            console.log("WebSocket connected for Notifications!");
+            console.log("WebSocket connected! Subscribing to topics...");
+            
+            // 1. Subscribe to personal notifications
             client?.subscribe(`/topic/notifications/${currentUser.uid}`, (message) => {
-              if (message.body) {
-                const rawNotification = JSON.parse(message.body);
-                const newNotification: Notification = {
-                    ...rawNotification,
-                    isRead: rawNotification.read !== undefined ? rawNotification.read : rawNotification.isRead
-                };
-                setNotifications(prev => [newNotification, ...prev]);
-                toast.success(newNotification.message, { 
-                    duration: 5000, 
-                    position: 'top-right',
-                    style: { fontWeight: 'bold' }
-                });
-              }
+              handleIncomingNotification(message);
             });
+
+            // 2. Subscribe to global broadcasts
+            client?.subscribe('/topic/broadcasts/ALL', (message) => {
+              handleIncomingNotification(message);
+            });
+
+            // 3. Subscribe to role-specific broadcasts
+            if (userRole) {
+              client?.subscribe(`/topic/broadcasts/${userRole.toUpperCase()}`, (message) => {
+                handleIncomingNotification(message);
+              });
+            }
           },
           onStompError: (frame) => {
             console.error('STOMP Broker error: ' + frame.headers['message']);
           },
         });
+
+        const handleIncomingNotification = (message: any) => {
+            if (message.body) {
+                const rawNotification = JSON.parse(message.body);
+                const newNotification: Notification = {
+                    ...rawNotification,
+                    isRead: rawNotification.read !== undefined ? rawNotification.read : rawNotification.isRead
+                };
+                
+                // Use functional update and check for duplicates by ID
+                setNotifications(prev => {
+                    if (prev.some(n => n.id === newNotification.id)) return prev;
+                    return [newNotification, ...prev];
+                });
+
+                toast.success(newNotification.message, { 
+                    duration: 5000, 
+                    position: 'top-right',
+                    style: { fontWeight: 'bold' }
+                });
+            }
+        };
 
         client.activate();
 

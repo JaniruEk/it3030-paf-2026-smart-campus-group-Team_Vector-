@@ -99,9 +99,14 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    // Use a ref to prevent double-clicks regardless of React state update speed
+    const isSubmittingBroadcast = React.useRef(false);
+
     const handleBroadcast = async (e: React.FormEvent) => {
         e.preventDefault();
-        if(!broadcastMsg.trim()) return;
+        if(!broadcastMsg.trim() || isSubmittingBroadcast.current) return;
+        
+        isSubmittingBroadcast.current = true;
         setIsBroadcasting(true);
         try {
             await apiClient.post('/notifications/broadcast', { message: broadcastMsg, role: broadcastRole });
@@ -112,6 +117,7 @@ const AdminDashboard: React.FC = () => {
             toast.error("Failed to send broadcast: " + (e.response?.data || e.message), { position: 'top-right' });
         } finally {
             setIsBroadcasting(false);
+            isSubmittingBroadcast.current = false;
         }
     };
 
