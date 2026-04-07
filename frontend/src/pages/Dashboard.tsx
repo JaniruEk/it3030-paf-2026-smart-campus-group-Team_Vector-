@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, Navigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
             <div className="admin-card">
                 <div className="card-header">
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        Welcome back, {currentUser?.displayName || 'User'}!
+                        Welcome back, {currentUser?.displayName || currentUser?.email}!
                     </h1>
                     <p style={{ fontSize: '1.1rem', color: '#64748b' }}>
                         You are currently logged into the Smart Campus Operations Hub as a <strong>{userRole}</strong>.

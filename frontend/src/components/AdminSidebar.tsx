@@ -13,7 +13,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
     const [isCollapsed, setIsCollapsed] = useState(() => {
         return localStorage.getItem('admin_sidebar_collapsed') === 'true';
     });
-    const { currentUser, logout } = useAuth();
+    const { currentUser, userProfile, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
@@ -47,7 +47,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
             
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem', padding: '0 0.5rem' }}>
                 <img 
-                    src={currentUser?.photoURL || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
+                    src={userProfile?.photoURL || currentUser?.photoURL || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
                     alt="Avatar" 
                     className="avatar" 
                     style={{width: isCollapsed ? '40px' : '64px', height: isCollapsed ? '40px' : '64px', transition: 'all 0.3s', marginBottom: '0.5rem'}}
@@ -60,7 +60,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
                             onClick={() => setProfileModalOpen(true)}
                             title="Click to view/edit profile"
                         >
-                            {currentUser?.email}
+                            {currentUser?.displayName || currentUser?.email}
                         </span>
                         <button onClick={logout} className="logout-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.6rem' }}>
                             <LogOut size={16} /> Logout
