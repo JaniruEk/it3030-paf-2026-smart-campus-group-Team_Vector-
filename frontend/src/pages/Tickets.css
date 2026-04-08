@@ -177,70 +177,8 @@
   color: #0f172a;
 }
 
-.status-pill {
-  font-size: 0.75rem;
-  border-radius: 999px;
-  padding: 0.25rem 0.65rem;
-  font-weight: 700;
-}
+/* Shared ticket and status styles are centrally managed in AdminDashboard.css */
 
-.status-open {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.status-in_progress {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.status-resolved {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-closed {
-  background: #e2e8f0;
-  color: #334155;
-}
-
-.status-rejected {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.ticket-meta {
-  margin: 0.55rem 0;
-  font-size: 0.84rem;
-  color: #475569;
-}
-
-.ticket-description {
-  margin: 0.55rem 0;
-  color: #1f2937;
-  white-space: pre-wrap;
-}
-
-.ticket-attachments {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.ticket-attachment-link {
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  overflow: hidden;
-  width: 80px;
-  height: 80px;
-}
-
-.ticket-attachment-link img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 
 .ticket-item-actions {
   margin-top: 0.8rem;

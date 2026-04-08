@@ -320,8 +320,16 @@ public class MaintenanceTicketService {
     }
 
     private void validateRequest(CreateMaintenanceTicketRequest request) {
+        if (request.getLocation() == null || request.getLocation().isBlank()) {
+            throw new IllegalArgumentException("Location details are required to help our technicians find the issue.");
+        }
+
+        if (request.getDescription() == null || request.getDescription().isBlank()) {
+            throw new IllegalArgumentException("Please provide a description of the issue.");
+        }
+
         if (request.getAttachments() != null && request.getAttachments().size() > MAX_ATTACHMENTS) {
-            throw new IllegalArgumentException("You can upload up to 3 image attachments only.");
+            throw new IllegalArgumentException("You can upload up to " + MAX_ATTACHMENTS + " evidence photos only.");
         }
 
         if (request.getAttachments() == null) {
@@ -330,10 +338,10 @@ public class MaintenanceTicketService {
 
         for (CreateMaintenanceTicketRequest.ImageAttachmentRequest attachment : request.getAttachments()) {
             if (attachment.getContentType() == null || !attachment.getContentType().toLowerCase(Locale.ROOT).startsWith("image/")) {
-                throw new IllegalArgumentException("Only image attachments are allowed.");
+                throw new IllegalArgumentException("Invalid file type: " + attachment.getFileName() + ". Only image attachments (JPG, PNG) are allowed.");
             }
             if (attachment.getDataUrl() == null || !attachment.getDataUrl().startsWith("data:image/")) {
-                throw new IllegalArgumentException("Attachment data must be a valid image data URL.");
+                throw new IllegalArgumentException("The attached image data for " + attachment.getFileName() + " is corrupted or invalid.");
             }
         }
     }

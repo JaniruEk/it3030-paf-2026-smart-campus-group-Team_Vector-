@@ -13,12 +13,26 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  if (auth.currentUser) {
-    const token = await auth.currentUser.getIdToken();
+  // Simple helper to wait for auth initialization if needed
+  const getAuthToken = () => new Promise<string | null>((resolve) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      unsubscribe();
+      if (user) {
+        const token = await user.getIdToken();
+        resolve(token);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+
+  const token = await getAuthToken();
+  if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 }, (error) => {
+  console.error('API Request Interceptor Error:', error);
   return Promise.reject(error);
 });
 

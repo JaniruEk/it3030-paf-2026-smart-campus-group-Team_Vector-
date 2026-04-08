@@ -55,49 +55,59 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
       return;
     }
 
-    const newAttachments: TicketAttachment[] = [];
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+    const filePromises = Array.from(files).map((file) => {
+      return new Promise<TicketAttachment>((resolve, reject) => {
         const reader = new FileReader();
-        const dataUrl = await new Promise<string>((resolve) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-        });
-        newAttachments.push({
+        reader.onload = () => {
+          resolve({
             fileName: file.name,
             contentType: file.type,
-            dataUrl
-        });
-    }
+            dataUrl: reader.result as string
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
 
-    setFormData(prev => ({
+    try {
+      const newAttachments = await Promise.all(filePromises);
+      setFormData(prev => ({
         ...prev,
         attachments: [...prev.attachments, ...newAttachments]
-    }));
+      }));
+    } catch (error) {
+      toast.error('Failed to process image files');
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
     if (mode === 'RESOURCE' && !formData.resourceId) {
-      toast.error('Please select a resource');
+      toast.error('Please select a campus asset');
       return;
     }
-    if (mode === 'LOCATION' && !formData.location) {
-      toast.error('Please specify a location');
+
+    if (!formData.location.trim()) {
+      toast.error('Please specify the exact location');
       return;
     }
-    if (!formData.description) {
+
+    if (!formData.description.trim()) {
       toast.error('Please describe the issue');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const ticket = await createTicket(formData);
+      await createTicket(formData);
       toast.success('Incident reported successfully');
-      onCreated(ticket);
+      onCreated(true);
+      onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create ticket');
+      const msg = error.response?.data?.message || error.message || 'Failed to create ticket';
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -123,19 +133,22 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                 className={`tab-btn ${mode === 'RESOURCE' ? 'active' : ''}`}
                 onClick={() => setMode('RESOURCE')}
             >
-                <Box size={18} /> Specific Asset
+                <Box size={18} /> Digital Catalogue
             </button>
             <button 
                 type="button"
                 className={`tab-btn ${mode === 'LOCATION' ? 'active' : ''}`}
-                onClick={() => setMode('LOCATION')}
+                onClick={() => {
+                  setMode('LOCATION');
+                  setFormData(prev => ({ ...prev, resourceId: '', resourceName: '' }));
+                }}
             >
                 <MapPin size={18} /> General Location
             </button>
           </div>
 
-          <div className="form-grid">
-             {mode === 'RESOURCE' ? (
+          <div className="form-grid" style={{ gridTemplateColumns: mode === 'RESOURCE' ? '1fr 1fr' : '1fr' }}>
+             {mode === 'RESOURCE' && (
                  <section className="form-section">
                     <label className="preview-label">Campus Asset</label>
                     <select 
@@ -143,26 +156,35 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                         value={formData.resourceId}
                         onChange={(e) => {
                             const res = resources.find(r => r.id === e.target.value);
-                            setFormData(prev => ({ ...prev, resourceId: e.target.value, resourceName: res?.name || '' }));
+                            setFormData(prev => ({ 
+                                ...prev, 
+                                resourceId: e.target.value, 
+                                resourceName: res?.name || '',
+                                // Pre-fill location if it's the first time and we have a name
+                                location: prev.location || (res?.name ? `Near ${res.name}` : '')
+                            }));
                         }}
                     >
                         <option value="">Select Resource</option>
                         {resources.map(r => <option key={r.id} value={r.id}>{r.name} ({r.type})</option>)}
                     </select>
                  </section>
-             ) : (
-                 <section className="form-section">
-                    <label className="preview-label">Location</label>
-                    <input 
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. Library 2nd Floor"
-                        value={formData.location}
-                        onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    />
-                 </section>
              )}
 
+             <section className="form-section">
+                <label className="preview-label">Location Details</label>
+                <input 
+                    type="text"
+                    className="form-input"
+                    placeholder={mode === 'RESOURCE' ? "e.g. Under the table, Wall mount" : "e.g. Library 2nd Floor, Room B20"}
+                    value={formData.location}
+                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                    required
+                />
+             </section>
+          </div>
+
+          <div className="form-grid">
              <section className="form-section">
                 <label className="preview-label">Category</label>
                 <select 
@@ -173,20 +195,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                     {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
                 </select>
              </section>
-          </div>
 
-          <div className="form-section" style={{ marginBottom: '1.5rem' }}>
-            <label className="preview-label">Issue Description</label>
-            <textarea 
-                className="form-textarea"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe the issue in detail..."
-                style={{ minHeight: '100px' }}
-            />
-          </div>
-
-          <div className="form-grid">
              <section className="form-section">
                 <label className="preview-label">Priority Level</label>
                 <div className="priority-selector">
@@ -203,28 +212,50 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                     ))}
                 </div>
              </section>
-
-             <section className="form-section">
-                <label className="preview-label">Upload Evidence (Max 3)</label>
-                <label className="upload-zone">
-                    <Upload size={20} />
-                    <span>Select Images</span>
-                    <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
-                </label>
-                <div className="attachment-preview-strip">
-                    {formData.attachments.map((a, i) => (
-                        <img key={i} src={a.dataUrl} alt="preview" className="attachment-thumbnail" />
-                    ))}
-                </div>
-             </section>
           </div>
+
+          <div className="form-section" style={{ marginBottom: '1.5rem' }}>
+            <label className="preview-label">Issue Description</label>
+            <textarea 
+                className="form-textarea"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe the issue in detail..."
+                style={{ minHeight: '80px' }}
+            />
+          </div>
+
+          <section className="form-section" style={{ marginBottom: '1.5rem' }}>
+            <label className="preview-label">Upload Evidence ({formData.attachments.length}/{MAX_ATTACHMENTS})</label>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <label className="upload-zone" style={{ flex: 1, padding: '1rem' }}>
+                  <Upload size={20} />
+                  <span>Attach Photos</span>
+                  <input type="file" multiple accept="image/*" hidden onChange={handleFileChange} />
+              </label>
+              <div className="attachment-preview-strip" style={{ margin: 0 }}>
+                  {formData.attachments.map((a, i) => (
+                      <div key={i} style={{ position: 'relative' }}>
+                          <img src={a.dataUrl} alt="preview" className="attachment-thumbnail" />
+                          <button 
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, attachments: prev.attachments.filter((_, idx) => idx !== i) }))}
+                            style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <X size={12} />
+                          </button>
+                      </div>
+                  ))}
+              </div>
+            </div>
+          </section>
 
           <button 
             type="submit" 
             className="submit-btn" 
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'REPORTING INCIDENT...' : 'SUBMIT INCIDENT REPORT'}
+            {isSubmitting ? 'REPORTING INCIDENT...' : 'SUBMIT MAINTENANCE REQUEST'}
           </button>
         </form>
       </div>
