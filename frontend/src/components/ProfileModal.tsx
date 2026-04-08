@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Lock, Save, CheckCircle, Camera } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isContentInappropriate } from '../utils/profanityUtils';
+import { compressImage } from '../utils/imageUtils';
 import './ProfileModal.css';
 
 interface ProfileModalProps {
@@ -39,41 +40,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
         }
     };
 
-    const processImage = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target?.result as string;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 200; // Small size for Base64 storage
-                    let width = img.width;
-                    let height = img.height;
 
-                    if (width > height) {
-                        if (width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
-                        }
-                    } else {
-                        if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compressed JPEG
-                };
-            };
-            reader.onerror = (err) => reject(err);
-        });
-    };
 
     const handleProfileUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,7 +59,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
             let finalPhotoURL = photoURL;
             if (selectedFile) {
                 // Convert to compressed Base64 since we are skipping Storage
-                finalPhotoURL = await processImage(selectedFile);
+                finalPhotoURL = await compressImage(selectedFile, 200, 0.7);
             }
 
             await updateUserProfile(displayName, finalPhotoURL);

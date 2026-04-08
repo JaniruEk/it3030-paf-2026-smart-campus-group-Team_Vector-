@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { createTicket, getResources } from '../services/ticketService';
+import { compressImage } from '../utils/imageUtils';
 import type { CreateTicketPayload, Resource, TicketAttachment } from '../types/ticket';
 import { X, Upload, MapPin, Box } from 'lucide-react';
 import './CreateTicketModal.css';
@@ -58,16 +59,19 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     const newAttachments: TicketAttachment[] = [];
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const reader = new FileReader();
-        const dataUrl = await new Promise<string>((resolve) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-        });
-        newAttachments.push({
-            fileName: file.name,
-            contentType: file.type,
-            dataUrl
-        });
+        try {
+            // Compress image to max 800px to fit Firestore 1MB document limit
+            const dataUrl = await compressImage(file, 800, 0.7);
+            
+            newAttachments.push({
+                fileName: file.name,
+                contentType: 'image/jpeg', // compressImage returns JPEG
+                dataUrl
+            });
+        } catch (error) {
+            console.error('Failed to compress image:', error);
+            toast.error(`Failed to process ${file.name}`);
+        }
     }
 
     setFormData(prev => ({
