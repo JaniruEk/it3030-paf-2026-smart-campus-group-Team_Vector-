@@ -11,6 +11,7 @@ import AdminRoute from './components/AdminRoute';
 import TechnicianRoute from './components/TechnicianRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminTickets from './pages/AdminTickets';
+import BookingForm from './components/Booking'
 import './App.css';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tickets" element={<Tickets />} />
+              <Route path="/Booking_Form" element={<BookingForm />} />
             </Route>
 
             {/* Secure Technician Area */}

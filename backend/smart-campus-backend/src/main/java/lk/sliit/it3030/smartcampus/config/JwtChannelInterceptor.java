@@ -38,15 +38,17 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                         accessor.getSessionAttributes().put("USER_PRINCIPAL", auth);
                     }
                     
-                    System.out.println("WebSocket Authentication Success: " + userId);
+                    System.out.println("[WebSocket] Authentication SUCCESS for UID: " + userId);
                 } catch (Exception e) {
-                    System.err.println("WebSocket Authentication Failed: " + e.getMessage());
+                    System.err.println("[WebSocket] Authentication FAILED: " + e.getMessage());
                     throw new IllegalArgumentException("Invalid WebSocket Token");
                 }
             } else {
+                System.err.println("[WebSocket] Connection attempt WITHOUT Authorization header");
                 throw new IllegalArgumentException("No Authorization header found for WebSocket");
             }
         } else if (accessor != null && accessor.getUser() == null) {
+
             // Restore from session attributes if not a CONNECT frame and user is missing
             if (accessor.getSessionAttributes() != null && accessor.getSessionAttributes().containsKey("USER_PRINCIPAL")) {
                 Principal auth = (Principal) accessor.getSessionAttributes().get("USER_PRINCIPAL");

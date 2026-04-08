@@ -5,15 +5,15 @@ import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
 interface AdminSidebarProps {
-    activeTab?: 'overview' | 'audit' | 'broadcast';
-    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast') => void;
+    activeTab?: 'overview' | 'audit' | 'broadcast' | 'bookings';
+    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast' | 'bookings') => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) => {
     const [isCollapsed, setIsCollapsed] = useState(() => {
         return localStorage.getItem('admin_sidebar_collapsed') === 'true';
     });
-    const { currentUser, logout } = useAuth();
+    const { currentUser, userProfile, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
@@ -24,7 +24,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
         localStorage.setItem('admin_sidebar_collapsed', isCollapsed.toString());
     }, [isCollapsed]);
 
-    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast') => {
+    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings') => {
         if (location.pathname !== '/admin') {
             navigate(`/admin?tab=${tab}`);
         } else {
@@ -47,7 +47,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
             
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem', padding: '0 0.5rem' }}>
                 <img 
-                    src={currentUser?.photoURL || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
+                    src={userProfile?.photoURL || currentUser?.photoURL || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
                     alt="Avatar" 
                     className="avatar" 
                     style={{width: isCollapsed ? '40px' : '64px', height: isCollapsed ? '40px' : '64px', transition: 'all 0.3s', marginBottom: '0.5rem'}}
@@ -60,7 +60,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
                             onClick={() => setProfileModalOpen(true)}
                             title="Click to view/edit profile"
                         >
-                            {currentUser?.email}
+                            {currentUser?.displayName || currentUser?.email}
                         </span>
                         <button onClick={logout} className="logout-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.6rem' }}>
                             <LogOut size={16} /> Logout
@@ -77,6 +77,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
             </button>
             <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
                 <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
+            </button>
+            <button className={`tab-btn ${activeTab === 'bookings' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('bookings')} title="Facility Bookings">
+                <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facility Bookings</span>}
             </button>
             <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">
                 <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Manage Tickets</span>}

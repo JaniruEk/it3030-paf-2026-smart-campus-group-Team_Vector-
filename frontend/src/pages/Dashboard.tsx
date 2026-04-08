@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, Navigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
             <div className="admin-card">
                 <div className="card-header">
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        Welcome back, {currentUser?.displayName || 'User'}!
+                        Welcome back, {currentUser?.displayName || currentUser?.email}!
                     </h1>
                     <p style={{ fontSize: '1.1rem', color: '#64748b' }}>
                         You are currently logged into the Smart Campus Operations Hub as a <strong>{userRole}</strong>.
@@ -37,10 +37,15 @@ const Dashboard: React.FC = () => {
                                 <p style={{ color: '#475569', marginBottom: '2rem', lineHeight: '1.6' }}>
                                     Access your personalized workspace to manage maintenance requests, view system notifications, and interact with the campus support team. Your dashboard provides real-time updates on all your active interests.
                                 </p>
-                                <div className="dashboard-actions">
-                                    <Link to={ticketActionPath} className="dashboard-action-link" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
+                                <div className="dashboard-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                    <Link to={ticketActionPath} className="dashboard-action-link" style={{ padding: '1rem 2rem', fontSize: '1.1rem', textAlign: 'center' }}>
                                         {ticketActionLabel}
                                     </Link>
+                                    {userRole !== 'TECHNICIAN' && (
+                                        <Link to="/Booking_Form" className="dashboard-action-link" style={{ padding: '1rem 2rem', fontSize: '1.1rem', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', textAlign: 'center' }}>
+                                            Book a Campus Facility
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
                             <div style={{ width: '300px', display: isProfileModalOpen ? 'none' : 'block' }}>

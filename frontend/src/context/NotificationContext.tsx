@@ -58,6 +58,8 @@ export const useNotifications = () => useContext(NotificationContext);
 
   useEffect(() => {
     let client: Client | null = null;
+    let isMounted = true;
+
     if (!currentUser) {
       setNotifications([]);
       return;
@@ -66,7 +68,12 @@ export const useNotifications = () => useContext(NotificationContext);
     const connectWebSocket = async () => {
       try {
         const token = await currentUser.getIdToken();
+        if (!isMounted) return;
+
         await fetchNotifications(token);
+        if (!isMounted) return;
+
+        console.log(`Initializing WebSocket for user ${currentUser.uid} with role ${userRole || 'pending'}`);
 
         client = new Client({
           webSocketFactory: () => new SockJS(wsUrl),
@@ -74,7 +81,10 @@ export const useNotifications = () => useContext(NotificationContext);
             Authorization: `Bearer ${token}`,
           },
           reconnectDelay: 5000,
+          heartbeatIncoming: 4000,
+          heartbeatOutgoing: 4000,
           onConnect: () => {
+            if (!isMounted) return;
             console.log("WebSocket connected! Subscribing to topics...");
             
             // 1. Subscribe to personal notifications
@@ -89,7 +99,9 @@ export const useNotifications = () => useContext(NotificationContext);
 
             // 3. Subscribe to role-specific broadcasts
             if (userRole) {
-              client?.subscribe(`/topic/broadcasts/${userRole.toUpperCase()}`, (message) => {
+              const roleTopic = `/topic/broadcasts/${userRole.toUpperCase()}`;
+              console.log(`Subscribing to role topic: ${roleTopic}`);
+              client?.subscribe(roleTopic, (message) => {
                 handleIncomingNotification(message);
               });
             }
@@ -97,27 +109,35 @@ export const useNotifications = () => useContext(NotificationContext);
           onStompError: (frame) => {
             console.error('STOMP Broker error: ' + frame.headers['message']);
           },
+          onWebSocketClose: () => {
+              if (isMounted) console.log("WebSocket connection closed.");
+          }
         });
 
         const handleIncomingNotification = (message: any) => {
             if (message.body) {
-                const rawNotification = JSON.parse(message.body);
-                const newNotification: Notification = {
-                    ...rawNotification,
-                    isRead: rawNotification.read !== undefined ? rawNotification.read : rawNotification.isRead
-                };
-                
-                // Use functional update and check for duplicates by ID
-                setNotifications(prev => {
-                    if (prev.some(n => n.id === newNotification.id)) return prev;
-                    return [newNotification, ...prev];
-                });
+                try {
+                    const rawNotification = JSON.parse(message.body);
+                    const newNotification: Notification = {
+                        ...rawNotification,
+                        isRead: rawNotification.read !== undefined ? rawNotification.read : rawNotification.isRead
+                    };
+                    
+                    if (isMounted) {
+                        setNotifications(prev => {
+                            if (prev.some(n => n.id === newNotification.id)) return prev;
+                            return [newNotification, ...prev];
+                        });
 
-                toast.success(newNotification.message, { 
-                    duration: 5000, 
-                    position: 'top-right',
-                    style: { fontWeight: 'bold' }
-                });
+                        toast.success(newNotification.message, { 
+                            duration: 5000, 
+                            position: 'top-right',
+                            style: { fontWeight: 'bold' }
+                        });
+                    }
+                } catch (err) {
+                    console.error("Error parsing incoming message:", err);
+                }
             }
         };
 
@@ -131,11 +151,13 @@ export const useNotifications = () => useContext(NotificationContext);
     connectWebSocket();
 
     return () => {
+      isMounted = false;
       if (client) {
+        console.log("Deactivating WebSocket client...");
         client.deactivate();
       }
     };
-  }, [currentUser]);
+  }, [currentUser, userRole]);
 
   const markAsRead = async (id: string) => {
     if (!currentUser) return;

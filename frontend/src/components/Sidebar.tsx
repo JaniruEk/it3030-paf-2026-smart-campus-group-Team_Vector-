@@ -7,22 +7,24 @@ import {
     ChevronRight, 
     LogOut, 
     ClipboardList,
-    Home
+    Home,
+    Calendar,
+    Package
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
 interface SidebarProps {
-    activeTab?: 'overview' | 'audit' | 'broadcast' | 'none';
-    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast') => void;
+    activeTab?: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'none';
+    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     const [isCollapsed, setIsCollapsed] = useState(() => {
         return localStorage.getItem('sidebar_collapsed') === 'true';
     });
-    const { currentUser, userRole, logout } = useAuth();
+    const { currentUser, userProfile, userRole, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
@@ -34,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
     }, [isCollapsed]);
 
-    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast') => {
+    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => {
         if (location.pathname !== '/admin') {
             navigate(`/admin?tab=${tab}`);
         } else {
@@ -57,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
             
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem', padding: '0 0.5rem' }}>
                 <img 
-                    src={currentUser?.photoURL || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
+                    src={userProfile?.photoURL || currentUser?.photoURL || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
                     alt="Avatar" 
                     className="avatar" 
                     style={{width: isCollapsed ? '40px' : '64px', height: isCollapsed ? '40px' : '64px', transition: 'all 0.3s', marginBottom: '0.5rem'}}
@@ -70,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                             onClick={() => setProfileModalOpen(true)}
                             title="Click to view/edit profile"
                         >
-                            {currentUser?.email}
+                            {currentUser?.displayName || currentUser?.email}
                         </span>
                         <div className="role-badge" style={{ marginBottom: '1rem' }}>{userRole}</div>
                         <button onClick={logout} className="logout-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.6rem' }}>
@@ -99,6 +101,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                     <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
                         <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
                     </button>
+                    <button className={`tab-btn ${activeTab === 'bookings' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('bookings')} title="Facility Bookings">
+                        <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facility Bookings</span>}
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'assets' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('assets')} title="Asset Management">
+                        <Package size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Asset Management</span>}
+                    </button>
                     <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">
                         <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Manage Tickets</span>}
                     </Link>
@@ -114,9 +122,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
             {/* USER SPECIFIC TABS */}
             {userRole === 'USER' && (
-                <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/tickets" title="My Tickets">
-                    <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>My Tickets</span>}
-                </Link>
+                <>
+                    <Link className={`tab-btn ${isTicketsActive ? 'active' : ''}`} to="/tickets" title="My Tickets">
+                        <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>My Tickets</span>}
+                    </Link>
+                    <Link className={`tab-btn ${location.pathname === '/Booking_Form' ? 'active' : ''}`} to="/Booking_Form" title="Campus Booking">
+                        <Calendar size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Campus Booking</span>}
+                    </Link>
+                </>
             )}
 
             

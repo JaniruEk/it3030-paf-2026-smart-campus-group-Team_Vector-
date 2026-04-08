@@ -7,6 +7,7 @@ import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
 import CreateTicketModal from '../components/CreateTicketModal';
+import { Edit2 } from 'lucide-react';
 import './Tickets.css';
 import './AdminDashboard.css';
 
@@ -21,6 +22,7 @@ const Tickets = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [editingTicket, setEditingTicket] = useState<MaintenanceTicket | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -39,8 +41,13 @@ const Tickets = () => {
   }, []);
 
   const handleTicketCreated = (newTicket: MaintenanceTicket) => {
-    setTickets((prev) => [newTicket, ...prev]);
+    if (editingTicket) {
+      setTickets((prev) => prev.map((t) => (t.id === newTicket.id ? newTicket : t)));
+    } else {
+      setTickets((prev) => [newTicket, ...prev]);
+    }
     setIsModalOpen(false);
+    setEditingTicket(null);
   };
 
   const handleTicketUpdate = (updatedTicket: MaintenanceTicket) => {
@@ -82,6 +89,19 @@ const Tickets = () => {
                         <span className={`priority-pill priority-${ticket.priority.toLowerCase()}`}>{ticket.priority}</span>
                       </div>
                     </div>
+                    {ticket.status === 'OPEN' && (
+                        <button 
+                            className="ticket-edit-btn"
+                            onClick={() => {
+                                setEditingTicket(ticket);
+                                setIsModalOpen(true);
+                            }}
+                            title="Edit Ticket"
+                        >
+                            <Edit2 size={16} />
+                            <span>Edit</span>
+                        </button>
+                    )}
                   </div>
 
                   <div className="admin-ticket-grid">
@@ -163,8 +183,12 @@ const Tickets = () => {
 
       {isModalOpen && (
         <CreateTicketModal
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingTicket(null);
+          }}
           onCreated={handleTicketCreated}
+          editingTicket={editingTicket || undefined}
         />
       )}
     </AppLayout>
