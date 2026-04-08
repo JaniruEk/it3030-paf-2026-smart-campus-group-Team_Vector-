@@ -27,39 +27,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log("Setting up Firebase Auth state listener...");
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("Firebase Auth triggered!", user);
-      if (user) {
-        try {
-          // Force refresh to get the latest custom claims (roles)
-          const idTokenResult = await user.getIdTokenResult(true);
-          const role = idTokenResult.claims.role as string || 'USER';
-          setUserRole(role);
-        } catch (e) {
-          console.error("Failed to fetch custom claims:", e);
-          setUserRole('USER');
+    let unsubscribe: () => void;
+
+    try {
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        console.log("Firebase Auth triggered!", user);
+        if (user) {
+          try {
+            // Force refresh to get the latest custom claims (roles)
+            const idTokenResult = await user.getIdTokenResult(true);
+            const role = idTokenResult.claims.role as string || 'USER';
+            setUserRole(role);
+          } catch (e) {
+            console.error("Failed to fetch custom claims:", e);
+            setUserRole('USER');
+          }
+        } else {
+          setUserRole(null);
         }
-      } else {
-        setUserRole(null);
-      }
-      setCurrentUser(user);
+        setCurrentUser(user);
+        setLoading(false);
+      }, (error) => {
+        console.error("Firebase Auth Error:", error);
+        // If Firebase fails, allow the app to load without authentication
+        setCurrentUser(null);
+        setUserRole('USER'); // Allow access as regular user
+        setLoading(false);
+      });
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+      // If Firebase completely fails, allow the app to load
+      setCurrentUser(null);
+      setUserRole('USER');
       setLoading(false);
-    }, (error) => {
-      console.error("Firebase Auth Error:", error);
-      setLoading(false);
-    });
+      return; // Exit early if Firebase fails to initialize
+    }
 
     // Fallback in case Firebase silent-fails
     const timeout = setTimeout(() => {
-        if(loading) {
-            console.log("Firebase taking too long, forcefully releasing loading lock.");
-            setLoading(false);
-        }
+      if (loading) {
+        console.log("Firebase taking too long, forcefully releasing loading lock.");
+        setLoading(false);
+      }
     }, 4000);
 
     return () => {
-        clearTimeout(timeout);
+      clearTimeout(timeout);
+      if (unsubscribe) {
         unsubscribe();
+      }
     };
   }, []);
 

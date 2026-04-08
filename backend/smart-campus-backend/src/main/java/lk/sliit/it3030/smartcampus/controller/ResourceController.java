@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @RestController
-@RequestMapping("/api/resources")
+@RequestMapping("/api/v1/resources")
 @CrossOrigin(origins = "*") 
 public class ResourceController {
 
@@ -35,8 +35,33 @@ public class ResourceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Resource>> getAllResources() throws ExecutionException, InterruptedException {
-        return ResponseEntity.ok(resourceRepository.findAll());
+    public ResponseEntity<List<Resource>> getAllResources(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Integer minCapacity) throws ExecutionException, InterruptedException {
+        List<Resource> resources = resourceRepository.findAll();
+        if (search != null && !search.isEmpty()) {
+            resources = resources.stream()
+                    .filter(r -> r.getName().toLowerCase().contains(search.toLowerCase()))
+                    .toList();
+        }
+        if (type != null && !type.isEmpty()) {
+            resources = resources.stream()
+                    .filter(r -> type.equals(r.getType()))
+                    .toList();
+        }
+        if (location != null && !location.isEmpty()) {
+            resources = resources.stream()
+                    .filter(r -> location.equals(r.getLocation()))
+                    .toList();
+        }
+        if (minCapacity != null) {
+            resources = resources.stream()
+                    .filter(r -> r.getCapacity() >= minCapacity)
+                    .toList();
+        }
+        return ResponseEntity.ok(resources);
     }
 
     @PutMapping("/{id}")
