@@ -2,37 +2,38 @@ import React, { useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { createTicket, getResources } from '../services/ticketService';
+import { createTicket, getResources, updateMyTicket } from '../services/ticketService';
 import { compressImage } from '../utils/imageUtils';
-import type { CreateTicketPayload, Resource, TicketAttachment } from '../types/ticket';
+import type { CreateTicketPayload, Resource, TicketAttachment, MaintenanceTicket } from '../types/ticket';
 import { X, Upload, MapPin, Box } from 'lucide-react';
 import './CreateTicketModal.css';
 
 interface CreateTicketModalProps {
   onClose: () => void;
   onCreated: (ticket: any) => void;
+  editingTicket?: MaintenanceTicket;
 }
 
 const CATEGORY_OPTIONS = ['ELECTRICAL', 'PLUMBING', 'CLEANING', 'IT_SUPPORT', 'FURNITURE', 'SECURITY', 'OTHER'];
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const MAX_ATTACHMENTS = 3;
 
-const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreated }) => {
+const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreated, editingTicket }) => {
   const { currentUser } = useAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mode, setMode] = useState<'RESOURCE' | 'LOCATION'>('RESOURCE');
+  const [mode, setMode] = useState<'RESOURCE' | 'LOCATION'>(editingTicket?.location ? 'LOCATION' : 'RESOURCE');
 
   const [formData, setFormData] = useState<CreateTicketPayload>({
-    resourceId: '',
-    resourceName: '',
-    location: '',
-    category: 'ELECTRICAL',
-    description: '',
-    priority: 'MEDIUM',
-    preferredContactDetails: currentUser?.email || '',
-    preferredContactMethod: 'EMAIL',
-    attachments: [],
+    resourceId: editingTicket?.resourceId || '',
+    resourceName: editingTicket?.resourceName || '',
+    location: editingTicket?.location || '',
+    category: editingTicket?.category || 'ELECTRICAL',
+    description: editingTicket?.description || '',
+    priority: editingTicket?.priority || 'MEDIUM',
+    preferredContactDetails: editingTicket?.preferredContactDetails || currentUser?.email || '',
+    preferredContactMethod: editingTicket?.preferredContactMethod || 'EMAIL',
+    attachments: editingTicket?.attachments || [],
   });
 
   useEffect(() => {
@@ -97,11 +98,17 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
 
     try {
       setIsSubmitting(true);
-      const ticket = await createTicket(formData);
-      toast.success('Incident reported successfully');
+      let ticket;
+      if (editingTicket) {
+        ticket = await updateMyTicket(editingTicket.id, formData);
+        toast.success('Incident report updated successfully');
+      } else {
+        ticket = await createTicket(formData);
+        toast.success('Incident reported successfully');
+      }
       onCreated(ticket);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create ticket');
+      toast.error(error.message || 'Failed to process ticket');
     } finally {
       setIsSubmitting(false);
     }
@@ -112,8 +119,10 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
       <div className="audit-modal-content">
         <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2>Report New Incident</h2>
-            <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.9rem' }}>Provide details about the maintenance issue.</p>
+            <h2>{editingTicket ? 'Edit Incident Report' : 'Report New Incident'}</h2>
+            <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+                {editingTicket ? 'Update the details of your maintenance issue.' : 'Provide details about the maintenance issue.'}
+            </p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '0.5rem', borderRadius: '50%' }}>
             <X size={24} />
@@ -228,7 +237,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
             className="submit-btn" 
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'REPORTING INCIDENT...' : 'SUBMIT INCIDENT REPORT'}
+            {isSubmitting ? (editingTicket ? 'UPDATING...' : 'REPORTING INCIDENT...') : (editingTicket ? 'UPDATE INCIDENT REPORT' : 'SUBMIT INCIDENT REPORT')}
           </button>
         </form>
       </div>

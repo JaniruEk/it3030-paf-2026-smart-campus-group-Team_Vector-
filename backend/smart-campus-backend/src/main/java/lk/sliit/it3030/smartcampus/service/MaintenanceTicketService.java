@@ -1,9 +1,11 @@
 package lk.sliit.it3030.smartcampus.service;
 
 import lk.sliit.it3030.smartcampus.dto.CreateMaintenanceTicketRequest;
-import lk.sliit.it3030.smartcampus.dto.TechnicianTicketMessageRequest;
 import lk.sliit.it3030.smartcampus.model.MaintenanceTicket;
 import lk.sliit.it3030.smartcampus.repository.MaintenanceTicketRepository;
+import com.google.firebase.auth.ExportedUserRecord;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.ListUsersPage;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -17,13 +19,13 @@ public class MaintenanceTicketService {
 
     private static final int MAX_ATTACHMENTS = 3;
     private static final String ROLE_ADMIN = "ADMIN";
-    private static final String ROLE_TECHNICIAN = "TECHNICIAN";
-    private static final String ROLE_USER = "USER";
 
     private final MaintenanceTicketRepository maintenanceTicketRepository;
+    private final NotificationService notificationService;
 
-    public MaintenanceTicketService(MaintenanceTicketRepository maintenanceTicketRepository) {
+    public MaintenanceTicketService(MaintenanceTicketRepository maintenanceTicketRepository, NotificationService notificationService) {
         this.maintenanceTicketRepository = maintenanceTicketRepository;
+        this.notificationService = notificationService;
     }
 
     public MaintenanceTicket createTicket(String userId, CreateMaintenanceTicketRequest request) throws ExecutionException, InterruptedException {
@@ -48,6 +50,30 @@ public class MaintenanceTicketService {
                 .build();
 
         maintenanceTicketRepository.save(ticket);
+
+        // Notify Admins about the new incident in background
+        new Thread(() -> {
+            try {
+                ListUsersPage page = FirebaseAuth.getInstance().listUsers(null);
+                java.util.List<String> adminUids = new java.util.ArrayList<>();
+                for (ExportedUserRecord user : page.iterateAll()) {
+                    java.util.Map<String, Object> claims = user.getCustomClaims();
+                    if (claims != null && "ADMIN".equals(claims.get("role"))) {
+                        adminUids.add(user.getUid());
+                    }
+                }
+                if (!adminUids.isEmpty()) {
+                    String msg = String.format("New %s incident reported at %s: %s", 
+                        ticket.getCategory(), 
+                        ticket.getLocation(), 
+                        ticket.getDescription());
+                    notificationService.broadcastToRole(msg, "ADMIN", adminUids);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to notify admins of new ticket: " + e.getMessage());
+            }
+        }).start();
+
         return ticket;
     }
 
@@ -252,6 +278,21 @@ public class MaintenanceTicketService {
         ticket.setStatus(normalizedTarget);
         ticket.setUpdatedAt(new Date());
         maintenanceTicketRepository.save(ticket);
+
+        // Notify User when technician resolves the ticket
+        if ("RESOLVED".equals(normalizedTarget)) {
+            new Thread(() -> {
+                try {
+                    String msg = String.format("Your %s incident at %s has been resolved. Please check the resolution notes.", 
+                        ticket.getCategory(), 
+                        ticket.getLocation());
+                    notificationService.createNotification(ticket.getUserId(), msg, "TICKET_RESOLVED");
+                } catch (Exception e) {
+                    System.err.println("Failed to notify user of resolved ticket: " + e.getMessage());
+                }
+            }).start();
+        }
+
         return ticket;
     }
 
@@ -275,6 +316,26 @@ public class MaintenanceTicketService {
         ticket.setUpdatedAt(now);
 
         maintenanceTicketRepository.save(ticket);
+
+        // Notify User and Technician
+        new Thread(() -> {
+            try {
+                // Notify User
+                String userMsg = String.format("Your %s incident report has been assigned to a technician: %s", 
+                    ticket.getCategory(), 
+                    technicianEmail != null ? technicianEmail : "Support Team");
+                notificationService.createNotification(ticket.getUserId(), userMsg, "TICKET_ASSIGNED");
+
+                // Notify Technician
+                String techMsg = String.format("New task assigned: %s incident at %s. Please review and start work.", 
+                    ticket.getCategory(), 
+                    ticket.getLocation());
+                notificationService.createNotification(technicianId, techMsg, "TASK_ASSIGNED");
+            } catch (Exception e) {
+                System.err.println("Failed to send assignment notifications: " + e.getMessage());
+            }
+        }).start();
+
         return ticket;
     }
 
