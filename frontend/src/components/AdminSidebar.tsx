@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Database, ShieldAlert, ChevronLeft, ChevronRight, LogOut, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import ProfileModal from './ProfileModal';
 
 interface AdminSidebarProps {
-    activeTab: 'overview' | 'audit' | 'broadcast';
-    setActiveTab: (tab: 'overview' | 'audit' | 'broadcast') => void;
+    activeTab: 'overview' | 'audit' | 'broadcast' | 'facilities';
+    setActiveTab: (tab: 'overview' | 'audit' | 'broadcast' | 'facilities') => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { currentUser, logout } = useAuth();
-    const navigate = useNavigate();
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
     return (
@@ -61,7 +59,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
             <button className={`tab-btn ${activeTab === 'broadcast' ? 'active' : ''}`} onClick={() => setActiveTab('broadcast')} title="Global Broadcast">
                 <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
             </button>
-            <button className="tab-btn" onClick={() => navigate('/facilities')} title="Facilities Catalogue">
+            <button className={`tab-btn ${activeTab === 'facilities' ? 'active' : ''}`} onClick={() => setActiveTab('facilities')} title="Facilities Catalogue">
                 <Building size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facilities</span>}
             </button>
             

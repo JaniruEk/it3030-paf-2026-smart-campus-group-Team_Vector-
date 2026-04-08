@@ -3,6 +3,7 @@ package lk.sliit.it3030.smartcampus.controller;
 import lk.sliit.it3030.smartcampus.model.Resource;
 import lk.sliit.it3030.smartcampus.repository.ResourceRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class ResourceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> createResource(@RequestBody Resource resource) throws ExecutionException, InterruptedException {
         String updateTime = resourceRepository.save(resource);
         return ResponseEntity.ok("Resource saved successfully at: " + updateTime);
@@ -65,6 +67,7 @@ public class ResourceController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> updateResource(@PathVariable String id, @RequestBody Resource resource) throws ExecutionException, InterruptedException {
         resource.setId(id);
         String updateTime = resourceRepository.save(resource);
@@ -72,6 +75,7 @@ public class ResourceController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteResource(@PathVariable String id) throws ExecutionException, InterruptedException {
         String result = resourceRepository.deleteById(id);
         return ResponseEntity.ok(result);

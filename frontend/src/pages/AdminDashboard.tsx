@@ -5,6 +5,7 @@ import { ShieldCheck, ShieldAlert, UserCog, User, Users, Database, Cpu, MemorySt
 import toast from 'react-hot-toast';
 import NotificationBell from '../components/NotificationBell';
 import AdminSidebar from '../components/AdminSidebar';
+import FacilitiesCatalogue from '../components/FacilitiesCatalogue';
 import './AdminDashboard.css';
 import './Dashboard.css';
 
@@ -27,7 +28,7 @@ const AdminDashboard: React.FC = () => {
     const [isUsersExpanded, setIsUsersExpanded] = useState(true);
     
     // New States
-    const [activeTab, setActiveTab] = useState<'overview'|'audit'|'broadcast'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview'|'audit'|'broadcast'|'facilities'>('overview');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [loadingAudit, setLoadingAudit] = useState(false);
     const [broadcastMsg, setBroadcastMsg] = useState('');
@@ -380,6 +381,10 @@ const AdminDashboard: React.FC = () => {
                             </form>
                         </div>
                     </div>
+                )}
+
+                {activeTab === 'facilities' && (
+                    <FacilitiesCatalogue />
                 )}
                 </div>
             </div>
