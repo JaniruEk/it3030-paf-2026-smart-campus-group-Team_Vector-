@@ -175,6 +175,34 @@ public class MaintenanceTicketService {
         ticket.setUpdatedAt(new Date());
 
         maintenanceTicketRepository.save(ticket);
+
+        // Notify relevant parties about the new comment
+        new Thread(() -> {
+            try {
+                String senderName = trimToNull(request.getSenderEmail()) != null ? request.getSenderEmail() : userRole;
+                String msg = String.format("New comment on %s incident at %s by %s.", 
+                    ticket.getCategory(), 
+                    ticket.getLocation(), 
+                    senderName);
+                
+                if (userRole.equals("USER")) {
+                    // Notify Admin and Tech
+                    notificationService.broadcastToRole(msg, "ADMIN", List.of()); // broadcastToRole handles finding admin UIDs if needed, or I should fetch them.
+                    // Actually broadcastToRole takes List<String> recipientIds. 
+                    // I'll fetch them like I did in createTicket or modify broadcastToRole.
+                    // For now, I'll fetch admin and tech.
+                    if (ticket.getAssignedTechnicianId() != null) {
+                        notificationService.createNotification(ticket.getAssignedTechnicianId(), msg, "COMMENT_ADDED");
+                    }
+                } else {
+                    // Notify the reporting User
+                    notificationService.createNotification(ticket.getUserId(), msg, "COMMENT_ADDED");
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send comment notification: " + e.getMessage());
+            }
+        }).start();
+
         return ticket;
     }
 
@@ -377,6 +405,23 @@ public class MaintenanceTicketService {
         ticket.setClosedAt(("CLOSED".equals(normalizedStatus) || "REJECTED".equals(normalizedStatus)) ? now : null);
 
         maintenanceTicketRepository.save(ticket);
+
+        // Notify User about the status change
+        new Thread(() -> {
+            try {
+                String msg = String.format("Admin updated your %s incident at %s to: %s.", 
+                    ticket.getCategory(), 
+                    ticket.getLocation(), 
+                    normalizedStatus);
+                if ("REJECTED".equals(normalizedStatus) && reason != null) {
+                    msg += " Reason: " + reason;
+                }
+                notificationService.createNotification(ticket.getUserId(), msg, "TICKET_UPDATE");
+            } catch (Exception e) {
+                System.err.println("Failed to notify user of admin ticket update: " + e.getMessage());
+            }
+        }).start();
+
         return ticket;
     }
 

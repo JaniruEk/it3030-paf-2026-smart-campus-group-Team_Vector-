@@ -70,6 +70,29 @@ public class BookingController {
             booking.setStatus(BookingStatus.PENDING);
             bookingRepository.save(booking);
 
+            // Notify Admins about the new booking request
+            new Thread(() -> {
+                try {
+                    com.google.firebase.auth.ListUsersPage page = com.google.firebase.auth.FirebaseAuth.getInstance().listUsers(null);
+                    java.util.List<String> adminUids = new java.util.ArrayList<>();
+                    for (com.google.firebase.auth.ExportedUserRecord user : page.iterateAll()) {
+                        java.util.Map<String, Object> claims = user.getCustomClaims();
+                        if (claims != null && "ADMIN".equals(claims.get("role"))) {
+                            adminUids.add(user.getUid());
+                        }
+                    }
+                    if (!adminUids.isEmpty()) {
+                        String msg = String.format("New booking request for %s on %s by %s.", 
+                            booking.getBookingResource(), 
+                            booking.getDate(), 
+                            booking.getUserId());
+                        notificationService.broadcastToRole(msg, "ADMIN", adminUids);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to notify admins of new booking: " + e.getMessage());
+                }
+            }).start();
+
             // Broadcast real-time update signal for Admin Dashboard
             messagingTemplate.convertAndSend("/topic/bookings/admin/updates", "BOOKING_CREATED");
 

@@ -27,7 +27,8 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tickets" element={<Tickets />} />
-              <Route path="/Booking_Form" element={<BookingForm />} />
+              <Route path="/book-facility" element={<BookingForm mode="facilities" />} />
+              <Route path="/book-asset" element={<BookingForm mode="assets" />} />
               <Route path="/facilities" element={<FacilitiesCatalogue />} />
             </Route>
 

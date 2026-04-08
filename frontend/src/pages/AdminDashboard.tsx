@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck, Send, Eye, Target, Plus, Trash2, Edit3 } from 'lucide-react';
+import { ShieldCheck, UserCog, User, Users, Database, Cpu, MemoryStick, ChevronDown, ChevronUp, UserCheck, Send, Eye, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -20,7 +20,7 @@ interface UserData {
 }
 
 const AdminDashboard: React.FC = () => {
-    const { userRole } = useAuth();
+    const { currentUser, userRole } = useAuth();
     const [users, setUsers] = useState<UserData[]>([]);
     const [healthData, setHealthData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -30,11 +30,6 @@ const AdminDashboard: React.FC = () => {
     const [isUsersExpanded, setIsUsersExpanded] = useState(true);
     const [bookings, setBookings] = useState<any[]>([]);
     const [loadingBookings, setLoadingBookings] = useState(false);
-    const [assets, setAssets] = useState<any[]>([]);
-    const [loadingAssets, setLoadingAssets] = useState(false);
-    const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
-    const [editingAsset, setEditingAsset] = useState<any | null>(null);
-    const [assetForm, setAssetForm] = useState({ name: '', type: '', status: 'Available' });
     
     // URL Persistence
     const [searchParams, setSearchParams] = useSearchParams();
@@ -95,8 +90,6 @@ const AdminDashboard: React.FC = () => {
                 fetchAuditLogs();
             } else if (activeTab === 'bookings') {
                 fetchBookings();
-            } else if (activeTab === 'assets') {
-                fetchAssets();
             }
         }
     }, [userRole, activeTab]);
@@ -110,22 +103,32 @@ const AdminDashboard: React.FC = () => {
             const host = window.location.hostname;
             const wsUrl = host === 'localhost' ? 'http://localhost:8080/ws' : `http://${host}:8080/ws`;
             
-            client = new Client({
+            const stompClient = new Client({
                 webSocketFactory: () => new SockJS(wsUrl),
                 reconnectDelay: 5000,
-                onConnect: () => {
-                    console.log("Admin Sync Connected");
-                    client?.subscribe('/topic/bookings/admin/updates', () => {
-                        console.log("Live Update Triggered: Fetching Bookings...");
-                        fetchBookings();
-                    });
-                    client?.subscribe('/topic/assets/updates', () => {
-                        console.log("Live Update Triggered: Fetching Assets...");
-                        fetchAssets();
-                    });
-                }
             });
-            client.activate();
+
+            stompClient.beforeConnect = async () => {
+                try {
+                    const token = await currentUser!.getIdToken(true);
+                    stompClient.connectHeaders = {
+                        'Authorization': `Bearer ${token}`
+                    };
+                } catch (err) {
+                    console.error("Admin Sync Token Refresh Failed", err);
+                }
+            };
+
+            stompClient.onConnect = () => {
+                console.log("Admin Sync Connected");
+                stompClient.subscribe('/topic/bookings/admin/updates', () => {
+                    console.log("Live Update Triggered: Fetching Bookings...");
+                    fetchBookings();
+                });
+            };
+
+            client = stompClient;
+            stompClient.activate();
         };
 
         setupSync();
@@ -147,47 +150,6 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const fetchAssets = async () => {
-        try {
-            setLoadingAssets(true);
-            const res = await apiClient.get('/resources');
-            setAssets(res.data || []);
-        } catch(e) {
-            console.error("Failed to fetch assets", e);
-            toast.error("Failed to load campus assets.");
-        } finally {
-            setLoadingAssets(false);
-        }
-    };
-
-    const handleSaveAsset = async () => {
-        try {
-            if (editingAsset) {
-                await apiClient.put(`/resources/${editingAsset.id}`, assetForm);
-                toast.success("Asset updated successfully!");
-            } else {
-                await apiClient.post('/resources', assetForm);
-                toast.success("New asset registered successfully!");
-            }
-            setIsAssetModalOpen(false);
-            fetchAssets();
-        } catch(e) {
-            console.error("Failed to save asset", e);
-            toast.error("Error saving asset details.");
-        }
-    };
-
-    const handleDeleteAsset = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this asset? This action cannot be undone.")) return;
-        try {
-            await apiClient.delete(`/resources/${id}`);
-            toast.success("Asset deleted successfully!");
-            fetchAssets();
-        } catch(e) {
-            console.error("Failed to delete asset", e);
-            toast.error("Error deleting asset.");
-        }
-    };
 
     const handleBookingStatusUpdate = async (id: string, status: string) => {
         try {
@@ -280,12 +242,6 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <AppLayout activeTab={activeTab} setActiveTab={setActiveTab}>
-            <div className="admin-card">
-                <div className="card-header">
-                    <h3>Smart Campus Operations Hub</h3>
-                    <p>Real-time system telemetry, log monitoring, and global broadcasts.</p>
-                </div>
-            </div>
 
             {activeTab === 'overview' && (
                 <>
@@ -648,8 +604,8 @@ const AdminDashboard: React.FC = () => {
             {activeTab === 'bookings' && (
                 <div className="admin-card">
                     <div className="card-header">
-                        <h3>Facility Booking Management</h3>
-                        <p>Approve or reject requests for campus rooms and resources.</p>
+                        <h3>Booking Request Review</h3>
+                        <p>Approve or reject requests for campus infrastructure and asset resources.</p>
                     </div>
                     {loadingBookings ? (
                         <div className="loading-state">Syncing secure booking records...</div>
@@ -719,155 +675,11 @@ const AdminDashboard: React.FC = () => {
             )}
 
             {activeTab === 'assets' && (
-                <div className="admin-card">
-                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <h3>Asset & Resource Management</h3>
-                            <p>Track and manage campus infrastructure, laboratory equipment, and facilities.</p>
-                        </div>
-                        <button 
-                            className="add-asset-btn" 
-                            onClick={() => { setEditingAsset(null); setAssetForm({ name: '', type: '', status: 'Available' }); setIsAssetModalOpen(true); }}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#3b82f6', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                        >
-                            <Plus size={18} /> Add New Asset
-                        </button>
-                    </div>
-
-                    {loadingAssets ? (
-                        <div className="loading-state">Syncing secure asset inventory...</div>
-                    ) : (
-                        <div className="table-responsive">
-                            <table className="users-table">
-                                <thead>
-                                    <tr>
-                                        <th>Asset Name</th>
-                                        <th>Category/Type</th>
-                                        <th>Status</th>
-                                        <th>Asset ID</th>
-                                        <th style={{ textAlign: 'right' }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {assets.map((asset) => (
-                                        <tr key={asset.id}>
-                                            <td style={{ fontWeight: 600, color: '#0f172a' }}>{asset.name}</td>
-                                            <td><span className="type-badge">{asset.type}</span></td>
-                                            <td>
-                                                <span className={`status-pill status-${asset.status?.toLowerCase().replace(' ', '-')}`}>
-                                                    {asset.status}
-                                                </span>
-                                            </td>
-                                            <td className="mono" style={{ fontSize: '0.8rem', color: '#64748b' }}>{asset.id?.substring(0, 8)}...</td>
-                                            <td style={{ textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                    <button 
-                                                        className="icon-action-btn" 
-                                                        onClick={() => { setEditingAsset(asset); setAssetForm({ name: asset.name, type: asset.type, status: asset.status }); setIsAssetModalOpen(true); }}
-                                                        style={{ background: '#f1f5f9', color: '#475569', border: 'none', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }}
-                                                        title="Edit Asset"
-                                                    >
-                                                        <Edit3 size={16} />
-                                                    </button>
-                                                    <button 
-                                                        className="icon-action-btn delete" 
-                                                        onClick={() => handleDeleteAsset(asset.id)}
-                                                        style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }}
-                                                        title="Delete Asset"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {assets.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="empty-state">No assets registered in the system.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+                <FacilitiesCatalogue mode="assets" />
             )}
 
-            {isAssetModalOpen && (
-                <div className="audit-modal-overlay" onClick={() => setIsAssetModalOpen(false)}>
-                    <div className="audit-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-                        <div className="audit-modal-header">
-                            <h2 style={{ margin: 0 }}>{editingAsset ? 'Edit Campus Asset' : 'Register New Asset'}</h2>
-                            <button className="audit-modal-close" onClick={() => setIsAssetModalOpen(false)}>
-                                <ChevronDown size={24} />
-                            </button>
-                        </div>
-                        <div className="audit-modal-body">
-                            <form className="asset-mgmt-form" onSubmit={(e) => { e.preventDefault(); handleSaveAsset(); }}>
-                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: '#475569' }}>Asset Name / Resource Name</label>
-                                    <input 
-                                        type="text" 
-                                        value={assetForm.name} 
-                                        onChange={(e) => setAssetForm({...assetForm, name: e.target.value})}
-                                        placeholder="e.g. Smart Projector R-302"
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: '#475569' }}>Resource Category</label>
-                                    <select 
-                                        value={assetForm.type} 
-                                        onChange={(e) => setAssetForm({...assetForm, type: e.target.value})}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                                        required
-                                    >
-                                        <option value="">Select Category...</option>
-                                        <option value="Audio/Visual">Audio/Visual</option>
-                                        <option value="Laboratory">Laboratory</option>
-                                        <option value="Seminar Room">Seminar Room</option>
-                                        <option value="Computing">Computing</option>
-                                        <option value="Sports">Sports</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: '#475569' }}>Operational Status</label>
-                                    <select 
-                                        value={assetForm.status} 
-                                        onChange={(e) => setAssetForm({...assetForm, status: e.target.value})}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                                        required
-                                    >
-                                        <option value="Available">Available</option>
-                                        <option value="In Use">In Use</option>
-                                        <option value="Maintenance">Maintenance</option>
-                                        <option value="Decommissioned">Decommissioned</option>
-                                    </select>
-                                </div>
-                                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsAssetModalOpen(false)}
-                                        style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontWeight: 600, cursor: 'pointer' }}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button 
-                                        type="submit" 
-                                        style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none', background: '#3b82f6', color: 'white', fontWeight: 600, cursor: 'pointer' }}
-                                    >
-                                        {editingAsset ? 'Update Asset' : 'Save Asset'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
             {activeTab === 'facilities' && (
-                <FacilitiesCatalogue />
-            )}
-                </div>
+                <FacilitiesCatalogue mode="facilities" />
             )}
             {selectedLog && (
                 <div className="audit-modal-overlay" onClick={() => setSelectedLog(null)}>

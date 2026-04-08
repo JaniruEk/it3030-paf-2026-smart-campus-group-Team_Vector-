@@ -7,7 +7,7 @@ import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
 import CreateTicketModal from '../components/CreateTicketModal';
-import { Edit2 } from 'lucide-react';
+import { Edit2, ClipboardList } from 'lucide-react';
 import './Tickets.css';
 import './AdminDashboard.css';
 
@@ -57,38 +57,93 @@ const Tickets = () => {
 
   return (
     <AppLayout activeTab="none">
-      <div className="admin-card">
-        <div className="card-header">
-          <h3>Your Maintenance Tickets</h3>
-          <p>Track the status of your reported incidents and communicate with technicians.</p>
-        </div>
-        
-        <div style={{ padding: '2rem' }}>
-          <div className="ticket-actions" style={{ marginBottom: '2rem' }}>
-            <button className="create-btn" onClick={() => setIsModalOpen(true)}>
-              Report New Incident
-            </button>
+      <div className="portal-container animate-fade-in">
+        <div className="portal-header">
+          <div className="header-text">
+            <h1 className="gradient-text">Incident Hub</h1>
+            <p>Track your maintenance requests and communicate with the resolution team.</p>
           </div>
+          <button className="primary-glass-btn" onClick={() => setIsModalOpen(true)}>
+            Report New Incident
+          </button>
+        </div>
 
+        <div className="portal-content">
           {isLoading ? (
-            <div className="loading-state">Syncing with campus services...</div>
+            <div className="loading-container">
+              <div className="spinner"></div>
+              <span>Syncing with campus services...</span>
+            </div>
           ) : tickets.length === 0 ? (
-            <div className="empty-state">You haven't reported any incidents yet.</div>
+            <div className="empty-portal-state">
+              <div className="empty-icon-shell">
+                <ClipboardList size={48} />
+              </div>
+              <h3>No Incidents Reported</h3>
+              <p>Your campus workspace is currently clear of maintenance issues.</p>
+              <button className="secondary-btn" onClick={() => setIsModalOpen(true)}>Create First Report</button>
+            </div>
           ) : (
-            <div className="ticket-list">
+            <div className="modern-card-grid">
               {tickets.map((ticket) => (
-                <article key={ticket.id} className="admin-ticket-card">
-                  <div className="admin-ticket-card-head">
-                    <div className="ticket-title-group">
-                      <h3>{ticket.category} Issue</h3>
-                      <div className="badge-row">
-                        <span className={`status-pill status-${ticket.status.toLowerCase()}`}>{ticket.status}</span>
-                        <span className={`priority-pill priority-${ticket.priority.toLowerCase()}`}>{ticket.priority}</span>
+                <article key={ticket.id} className="modern-ticket-card smooth-transition">
+                  <div className="card-top">
+                    <div className="category-tag">
+                      <span className="dot"></span>
+                      {ticket.category}
+                    </div>
+                    <div className="badges">
+                      <span className={`pill status-${ticket.status.toLowerCase()}`}>{ticket.status}</span>
+                      <span className={`pill priority-${ticket.priority.toLowerCase()}`}>{ticket.priority}</span>
+                    </div>
+                  </div>
+
+                  <div className="card-body">
+                    <div className="main-info">
+                      <div className="title-row">
+                        <h3>Resource Issue</h3>
+                        <span className="timestamp">{formatDate(ticket.createdAt)}</span>
+                      </div>
+                      <div className="location-info">
+                        <strong>Location:</strong> {ticket.resourceName || ticket.location}
+                      </div>
+                      <p className="description">{ticket.description}</p>
+                    </div>
+
+                    <div className="tech-info">
+                      <label>Assigned Support</label>
+                      <div className="tech-profile">
+                        <div className="tech-avatar-mini">{ticket.assignedTechnicianEmail ? ticket.assignedTechnicianEmail.charAt(0).toUpperCase() : '?'}</div>
+                        <span>{ticket.assignedTechnicianEmail || 'System Assignment Pending'}</span>
                       </div>
                     </div>
+
+                    {ticket.attachments && ticket.attachments.length > 0 && (
+                      <div className="card-attachments">
+                        <label>Evidence</label>
+                        <div className="attachment-strip">
+                          {ticket.attachments.map((img, i) => (
+                            <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer" className="strip-item">
+                              <img src={img.dataUrl} alt="Evidence" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {ticket.resolutionNotes && (
+                    <div className="resolution-feedback">
+                      <label>Resolution Summary</label>
+                      <p>{ticket.resolutionNotes}</p>
+                    </div>
+                  )}
+
+                  <div className="card-footer">
+                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
                     {ticket.status === 'OPEN' && (
                         <button 
-                            className="ticket-edit-btn"
+                            className="edit-icon-btn"
                             onClick={() => {
                                 setEditingTicket(ticket);
                                 setIsModalOpen(true);
@@ -96,59 +151,9 @@ const Tickets = () => {
                             title="Edit Ticket"
                         >
                             <Edit2 size={16} />
-                            <span>Edit</span>
                         </button>
                     )}
                   </div>
-
-                  <div className="admin-ticket-grid">
-                    <div className="ticket-info-main">
-                      <div className="info-row">
-                        <div className="info-item">
-                          <label>Submitted</label>
-                          <span>{formatDate(ticket.createdAt)}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Resource / Location</label>
-                          <span>{ticket.resourceName || ticket.location}</span>
-                        </div>
-                      </div>
-                      <div className="info-item full">
-                        <label>Issue Description</label>
-                        <p>{ticket.description}</p>
-                      </div>
-                      <div className="info-item full">
-                        <label>Assigned Technician</label>
-                        <span style={{ color: ticket.assignedTechnicianEmail ? '#0f172a' : '#94a3b8', fontWeight: 600 }}>
-                          {ticket.assignedTechnicianEmail || 'System Assignment Pending'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="ticket-attachments-side">
-                      <label>Your Evidence</label>
-                      {ticket.attachments && ticket.attachments.length > 0 ? (
-                        <div className="attachment-previews">
-                          {ticket.attachments.map((img, i) => (
-                            <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer">
-                              <img src={img.dataUrl} alt="Evidence" />
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="no-attachments">No images attached</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {ticket.resolutionNotes && (
-                    <div className="resolution-notes-box">
-                      <label>Resolution Summary</label>
-                      <p>{ticket.resolutionNotes}</p>
-                    </div>
-                  )}
-
-                  <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
                 </article>
               ))}
             </div>

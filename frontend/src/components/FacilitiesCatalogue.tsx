@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { createResource, deleteResource, getResources, updateResource } from '../api/resourceApi';
 import type { Resource } from '../api/resourceApi';
+import { useAuth } from '../context/AuthContext';
 import { Search, Plus, Filter, MapPin, Users, Clock, Trash2, Edit3, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './FacilitiesCatalogue.css';
 
-const resourceTypes = ['All', 'Lecture Hall', 'Lab', 'Meeting Room', 'Equipment'];
-const locations = ['All', 'Block A', 'Block B', 'Admin Block', 'AV Store'];
-const statusOptions = ['ACTIVE', 'OUT_OF_SERVICE'];
+const LOCATIONS = ['Block A', 'Block B', 'Admin Block', 'AV Store'];
+const STATUS_OPTIONS = ['ACTIVE', 'OUT_OF_SERVICE'];
+const FACILITY_TYPES = ['Lecture Hall', 'Computer Lab', 'Science Lab', 'Meeting Room', 'Auditorium'];
+const ASSET_TYPES = ['Projector', 'Camera', 'Laptop', 'Sound System', 'Router'];
 
 const initialForm: Omit<Resource, 'id'> = {
   name: '',
@@ -18,26 +20,50 @@ const initialForm: Omit<Resource, 'id'> = {
   status: 'ACTIVE',
 };
 
-const FacilitiesCatalogue: React.FC = () => {
+interface FacilitiesCatalogueProps {
+  mode?: 'facilities' | 'assets' | 'all';
+}
+
+const FacilitiesCatalogue: React.FC<FacilitiesCatalogueProps> = ({ mode = 'all' }) => {
+  const { userRole } = useAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const currentResourceTypes = mode === 'facilities' 
+    ? ['All', ...FACILITY_TYPES] 
+    : mode === 'assets' 
+    ? ['All', ...ASSET_TYPES] 
+    : ['All', ...FACILITY_TYPES, ...ASSET_TYPES];
+
   const [typeFilter, setTypeFilter] = useState('All');
   const [locationFilter, setLocationFilter] = useState('All');
   const [minCapacity, setMinCapacity] = useState('');
-  const [formData, setFormData] = useState<Omit<Resource, 'id'>>(initialForm);
+  const [formData, setFormData] = useState<Omit<Resource, 'id'>>({
+    ...initialForm,
+    type: mode === 'assets' ? ASSET_TYPES[0] : FACILITY_TYPES[0]
+  });
   const [loading, setLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const loadResources = async () => {
     setLoading(true);
     try {
+      let typeParam = typeFilter !== 'All' ? typeFilter : '';
+      
       const data = await getResources({
         search: searchTerm,
-        type: typeFilter !== 'All' ? typeFilter : '',
+        type: typeParam,
         location: locationFilter !== 'All' ? locationFilter : '',
         minCapacity: minCapacity !== '' ? Number(minCapacity) : undefined,
       });
-      setResources(data);
+
+      // Client side filtering for Mode if typeParam is empty
+      if (typeParam === '' && mode !== 'all') {
+        const allowedTypes = mode === 'facilities' ? FACILITY_TYPES : ASSET_TYPES;
+        setResources(data.filter((r: Resource) => allowedTypes.includes(r.type)));
+      } else {
+        setResources(data);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Unable to load resources', { position: 'bottom-right' });
     } finally {
@@ -100,14 +126,20 @@ const FacilitiesCatalogue: React.FC = () => {
     <section className="facilities-catalogue">
       <div className="catalogue-header">
         <div>
-          <h2>Facilities & Assets Catalogue</h2>
+          <h2>{mode === 'facilities' ? 'Facility Booking Management' : mode === 'assets' ? 'Asset & Resource Management' : 'Facilities & Assets Catalogue'}</h2>
           <p className="catalogue-description">
-            Manage bookable campus resources, verify availability, and monitor operational status.
+            {mode === 'facilities' 
+              ? 'Manage infrastructure resources like lecture halls, labs, and meeting rooms.' 
+              : mode === 'assets' 
+              ? 'Manage portable equipment inventory like projectors, cameras, and laptops.' 
+              : 'Browse and manage all campus resources and equipment.'}
           </p>
         </div>
-        <button className="add-resource-btn" onClick={() => setIsFormOpen(!isFormOpen)}>
-          {isFormOpen ? 'Close Form' : <><Plus size={18} /> Add New Resource</>}
-        </button>
+        {userRole === 'ADMIN' && (
+          <button className="add-resource-btn" onClick={() => setIsFormOpen(!isFormOpen)}>
+            {isFormOpen ? 'Close Form' : <><Plus size={18} /> Add New Resource</>}
+          </button>
+        )}
       </div>
 
       <div className="catalogue-filters">
@@ -124,7 +156,7 @@ const FacilitiesCatalogue: React.FC = () => {
         <div className="filter-group">
           <Filter size={16} />
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-            {resourceTypes.map((type) => (
+            {currentResourceTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -132,32 +164,34 @@ const FacilitiesCatalogue: React.FC = () => {
           </select>
 
           <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)}>
-            {locations.map((location) => (
+            {['All', ...LOCATIONS].map((location) => (
               <option key={location} value={location}>
                 {location}
               </option>
             ))}
           </select>
 
-          <input
-            type="number"
-            min="0"
-            placeholder="Min Cap"
-            value={minCapacity}
-            onChange={(e) => setMinCapacity(e.target.value)}
-          />
+          {mode !== 'assets' && (
+            <input
+              type="number"
+              min="0"
+              placeholder="Min Cap"
+              value={minCapacity}
+              onChange={(e) => setMinCapacity(e.target.value)}
+            />
+          )}
         </div>
       </div>
 
       <div className="catalogue-summary">
-        Displaying <strong>{resources.length}</strong> resources
+        Displaying <strong>{resources.length}</strong> {mode === 'all' ? 'resources' : mode}
       </div>
 
       <div className="catalogue-grid">
         {loading && resources.length === 0 ? (
           <div className="loading-container">
             <Loader2 className="spinner" size={40} />
-            <p>Fetching assets...</p>
+            <p>Fetching {mode} catalogues...</p>
           </div>
         ) : (
           resources.map((resource) => (
@@ -178,32 +212,36 @@ const FacilitiesCatalogue: React.FC = () => {
                   <MapPin size={16} />
                   <span>{resource.location}</span>
                 </div>
-                <div className="detail-item">
-                  <Users size={16} />
-                  <span>Capacity: {resource.capacity || 'N/A'}</span>
-                </div>
+                {resource.capacity > 0 && (
+                  <div className="detail-item">
+                    <Users size={16} />
+                    <span>Capacity: {resource.capacity}</span>
+                  </div>
+                )}
                 <div className="detail-item">
                   <Clock size={16} />
                   <span>{resource.availability}</span>
                 </div>
               </div>
 
-              <div className="resource-actions">
-                <button 
-                  className="action-btn toggle" 
-                  onClick={() => handleStatusToggle(resource)}
-                  title="Toggle Operational Status"
-                >
-                  <Edit3 size={16} /> Toggle Status
-                </button>
-                <button 
-                  className="action-btn delete" 
-                  onClick={() => handleDelete(resource.id!)}
-                  title="Remove Resource"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
+              {userRole === 'ADMIN' && (
+                <div className="resource-actions">
+                  <button 
+                    className="action-btn toggle" 
+                    onClick={() => handleStatusToggle(resource)}
+                    title="Toggle Operational Status"
+                  >
+                    <Edit3 size={16} /> Toggle Status
+                  </button>
+                  <button 
+                    className="action-btn delete" 
+                    onClick={() => handleDelete(resource.id!)}
+                    title="Remove Resource"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
             </article>
           ))
         )}
@@ -213,7 +251,7 @@ const FacilitiesCatalogue: React.FC = () => {
         <div className="form-overlay active">
           <section className="resource-form-section glass">
             <div className="form-header">
-              <h3>Add New Campus Resource</h3>
+              <h3>Register {mode === 'assets' ? 'Equipment/Resource' : 'Campus Facility'}</h3>
               <button className="close-btn" onClick={() => setIsFormOpen(false)}>&times;</button>
             </div>
             <form className="resource-form" onSubmit={handleSubmit}>
@@ -224,7 +262,7 @@ const FacilitiesCatalogue: React.FC = () => {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Main Hall"
+                    placeholder={mode === 'assets' ? "e.g. Sony Alpha 7 IV" : "e.g. Hall A101"}
                     required
                   />
                 </div>
@@ -235,7 +273,7 @@ const FacilitiesCatalogue: React.FC = () => {
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   >
-                    {resourceTypes.slice(1).map((type) => (
+                    {currentResourceTypes.slice(1).map((type) => (
                       <option key={type} value={type}>
                         {type}
                       </option>
@@ -243,24 +281,26 @@ const FacilitiesCatalogue: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="form-field">
-                  <label>Capacity</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
-                    required
-                  />
-                </div>
+                {mode !== 'assets' && (
+                  <div className="form-field">
+                    <label>Capacity</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.capacity}
+                      onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="form-field">
-                  <label>Location</label>
+                  <label>Location / Store</label>
                   <select
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   >
-                    {locations.slice(1).map((location) => (
+                    {LOCATIONS.map((location) => (
                       <option key={location} value={location}>
                         {location}
                       </option>
@@ -280,12 +320,12 @@ const FacilitiesCatalogue: React.FC = () => {
                 </div>
 
                 <div className="form-field full-width">
-                  <label>Initial Status</label>
+                  <label>Operational Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   >
-                    {statusOptions.map((status) => (
+                    {STATUS_OPTIONS.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
@@ -295,7 +335,9 @@ const FacilitiesCatalogue: React.FC = () => {
               </div>
 
               <div className="form-footer">
-                <button type="submit" className="submit-btn">Register New Resource</button>
+                <button type="submit" className="submit-btn">
+                  Confirm Registration
+                </button>
               </div>
             </form>
           </section>

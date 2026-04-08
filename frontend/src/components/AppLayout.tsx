@@ -23,20 +23,39 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, activeTab, setActiveTab
     };
 
     return (
-        <div className="admin-dashboard-layout">
+        <div className="admin-dashboard-layout" style={{ background: 'var(--bg-soft)' }}>
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
             
-            <div className="admin-main">
-                <header className="dashboard-header" style={{ margin: '-2rem -2rem 2rem -2rem' }}>
-                    <h2>Smart Campus Operations Hub</h2>
-                    <div className="header-actions">
-                        {getRoleBadge()}
-                        <NotificationBell />
+            <div className="admin-main smooth-transition">
+                <div style={{ padding: '1rem' }}>
+                    <header className="dashboard-header" style={{ 
+                        background: 'var(--glass-bg)',
+                        backdropFilter: 'blur(12px)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: 'var(--radius-lg)',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                        padding: '1rem 2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        margin: '0 0 2rem 0'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
+                                Campus Portal
+                            </h2>
+                        </div>
+                        
+                        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            {getRoleBadge()}
+                            <div style={{ width: '1px', height: '24px', background: '#e2e8f0', margin: '0 0.5rem' }}></div>
+                            <NotificationBell />
+                        </div>
+                    </header>
+    
+                    <div className="admin-content" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+                        {children}
                     </div>
-                </header>
-
-                <div className="admin-content">
-                    {children}
                 </div>
             </div>
         </div>

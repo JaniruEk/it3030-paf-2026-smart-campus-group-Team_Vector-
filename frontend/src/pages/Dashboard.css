@@ -99,24 +99,6 @@
   color: #0f172a;
 }
 
-.dashboard-actions {
-  margin-top: 1.25rem;
-}
-
-.dashboard-action-link {
-  display: inline-block;
-  text-decoration: none;
-  background: #0284c7;
-  color: #ffffff;
-  font-weight: 600;
-  padding: 0.65rem 1rem;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.dashboard-action-link:hover {
-  background: #0369a1;
-}
 
 .modules-grid {
   display: grid;
@@ -130,7 +112,7 @@
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border: 2px solid transparent;
   display: flex;
@@ -139,9 +121,17 @@
 }
 
 .module-card:hover:not(.coming-soon) {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -5px rgba(0, 0, 0, 0.15);
-  border-color: #3b82f6;
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border-color: #6366f1;
+}
+
+.module-card:hover .module-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.module-icon {
+  transition: transform 0.3s ease;
 }
 
 .module-card.coming-soon {

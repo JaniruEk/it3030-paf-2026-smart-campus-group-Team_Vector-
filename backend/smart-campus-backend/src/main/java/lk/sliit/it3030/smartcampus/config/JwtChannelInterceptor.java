@@ -22,6 +22,9 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
             String token = accessor.getFirstNativeHeader("Authorization");
+            if (token == null) {
+                token = accessor.getFirstNativeHeader("authorization");
+            }
             
             if (token != null && token.startsWith("Bearer ")) {
                 token = token.substring(7);
@@ -38,10 +41,15 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                         accessor.getSessionAttributes().put("USER_PRINCIPAL", auth);
                     }
                     
-                    System.out.println("[WebSocket] Authentication SUCCESS for UID: " + userId);
+                    // Reduced logging to only show failures or critical events
                 } catch (Exception e) {
-                    System.err.println("[WebSocket] Authentication FAILED: " + e.getMessage());
-                    throw new IllegalArgumentException("Invalid WebSocket Token");
+                    if (e.getMessage().contains("expired")) {
+                        System.err.println("[WebSocket AUTH] Token Expired for connection attempt.");
+                    } else {
+                        System.err.println("[WebSocket AUTH] FAILED: " + e.getMessage());
+                    }
+                    // Throwing ensures the connection is rejected
+                    throw new IllegalArgumentException("Authentication required for WebSocket connection.");
                 }
             } else {
                 System.err.println("[WebSocket] Connection attempt WITHOUT Authorization header");

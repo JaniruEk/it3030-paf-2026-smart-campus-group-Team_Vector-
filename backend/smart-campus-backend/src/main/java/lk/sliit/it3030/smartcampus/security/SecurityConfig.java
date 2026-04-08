@@ -47,6 +47,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -67,8 +68,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/v1/auth/public/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/booking/*/status").hasRole("ADMIN")
                 .requestMatchers("/api/v1/booking/**").authenticated()
-                .requestMatchers("/api/v1/resources/**").hasAnyAuthority("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/resources/**").authenticated()
+                .requestMatchers("/api/v1/resources/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

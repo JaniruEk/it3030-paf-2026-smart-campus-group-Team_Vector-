@@ -75,44 +75,52 @@ export const useNotifications = () => useContext(NotificationContext);
 
         console.log(`Initializing WebSocket for user ${currentUser.uid} with role ${userRole || 'pending'}`);
 
-        client = new Client({
+        const stompClient = new Client({
           webSocketFactory: () => new SockJS(wsUrl),
-          connectHeaders: {
-            Authorization: `Bearer ${token}`,
-          },
           reconnectDelay: 5000,
           heartbeatIncoming: 4000,
           heartbeatOutgoing: 4000,
-          onConnect: () => {
-            if (!isMounted) return;
-            console.log("WebSocket connected! Subscribing to topics...");
-            
-            // 1. Subscribe to personal notifications
-            client?.subscribe(`/topic/notifications/${currentUser.uid}`, (message) => {
-              handleIncomingNotification(message);
-            });
-
-            // 2. Subscribe to global broadcasts
-            client?.subscribe('/topic/broadcasts/ALL', (message) => {
-              handleIncomingNotification(message);
-            });
-
-            // 3. Subscribe to role-specific broadcasts
-            if (userRole) {
-              const roleTopic = `/topic/broadcasts/${userRole.toUpperCase()}`;
-              console.log(`Subscribing to role topic: ${roleTopic}`);
-              client?.subscribe(roleTopic, (message) => {
-                handleIncomingNotification(message);
-              });
-            }
-          },
-          onStompError: (frame) => {
-            console.error('STOMP Broker error: ' + frame.headers['message']);
-          },
-          onWebSocketClose: () => {
-              if (isMounted) console.log("WebSocket connection closed.");
-          }
         });
+
+        stompClient.beforeConnect = async () => {
+          try {
+            const freshToken = await currentUser.getIdToken(true);
+            stompClient.connectHeaders = {
+              'Authorization': `Bearer ${freshToken}`,
+            };
+          } catch (err) {
+            console.error("Failed to refresh token before WebSocket connect", err);
+          }
+        };
+
+        stompClient.onConnect = () => {
+          if (!isMounted) return;
+          console.log("WebSocket connected! Subscribing to topics...");
+          
+          stompClient.subscribe(`/topic/notifications/${currentUser.uid}`, (message) => {
+            handleIncomingNotification(message);
+          });
+
+          stompClient.subscribe('/topic/broadcasts/ALL', (message) => {
+            handleIncomingNotification(message);
+          });
+
+          if (userRole) {
+            const roleTopic = `/topic/broadcasts/${userRole.toUpperCase()}`;
+            console.log(`Subscribing to role topic: ${roleTopic}`);
+            stompClient.subscribe(roleTopic, (message) => {
+              handleIncomingNotification(message);
+            });
+          }
+        };
+
+        stompClient.onStompError = (frame) => {
+          console.error('STOMP Broker error: ' + frame.headers['message']);
+        };
+
+        stompClient.onWebSocketClose = () => {
+            if (isMounted) console.log("WebSocket connection closed.");
+        };
 
         const handleIncomingNotification = (message: any) => {
             if (message.body) {
@@ -141,7 +149,8 @@ export const useNotifications = () => useContext(NotificationContext);
             }
         };
 
-        client.activate();
+        client = stompClient;
+        stompClient.activate();
 
       } catch (e) {
         console.error("Failed to initialize WebSocket", e);
