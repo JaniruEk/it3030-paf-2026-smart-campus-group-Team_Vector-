@@ -9,15 +9,16 @@ import {
     ClipboardList,
     Home,
     Calendar,
-    Package
+    Package,
+    Building
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileModal from './ProfileModal';
 
 interface SidebarProps {
-    activeTab?: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'none';
-    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => void;
+    activeTab?: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'facilities' | 'none';
+    setActiveTab?: (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'facilities') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
@@ -36,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
     }, [isCollapsed]);
 
-    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => {
+    const handleTabClick = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'facilities') => {
         if (location.pathname !== '/admin') {
             navigate(`/admin?tab=${tab}`);
         } else {
@@ -100,6 +101,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                     </button>
                     <button className={`tab-btn ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
                         <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Global Broadcast</span>}
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'facilities' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('facilities')} title="Facilities Catalogue">
+                        <Building size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facilities</span>}
                     </button>
                     <button className={`tab-btn ${activeTab === 'bookings' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('bookings')} title="Facility Bookings">
                         <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facility Bookings</span>}

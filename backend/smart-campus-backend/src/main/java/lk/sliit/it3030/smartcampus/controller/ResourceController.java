@@ -3,6 +3,7 @@ package lk.sliit.it3030.smartcampus.controller;
 import lk.sliit.it3030.smartcampus.model.Resource;
 import lk.sliit.it3030.smartcampus.repository.ResourceRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -23,6 +24,7 @@ public class ResourceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> createResource(@RequestBody Resource resource) throws ExecutionException, InterruptedException {
         String updateTime = resourceRepository.save(resource);
         messagingTemplate.convertAndSend("/topic/assets/updates", "ASSET_CREATED");
@@ -39,11 +41,37 @@ public class ResourceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Resource>> getAllResources() throws ExecutionException, InterruptedException {
-        return ResponseEntity.ok(resourceRepository.findAll());
+    public ResponseEntity<List<Resource>> getAllResources(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Integer minCapacity) throws ExecutionException, InterruptedException {
+        List<Resource> resources = resourceRepository.findAll();
+        if (search != null && !search.isEmpty()) {
+            resources = resources.stream()
+                    .filter(r -> r.getName().toLowerCase().contains(search.toLowerCase()))
+                    .toList();
+        }
+        if (type != null && !type.isEmpty()) {
+            resources = resources.stream()
+                    .filter(r -> type.equals(r.getType()))
+                    .toList();
+        }
+        if (location != null && !location.isEmpty()) {
+            resources = resources.stream()
+                    .filter(r -> location.equals(r.getLocation()))
+                    .toList();
+        }
+        if (minCapacity != null) {
+            resources = resources.stream()
+                    .filter(r -> r.getCapacity() >= minCapacity)
+                    .toList();
+        }
+        return ResponseEntity.ok(resources);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> updateResource(@PathVariable String id, @RequestBody Resource resource) throws ExecutionException, InterruptedException {
         resource.setId(id);
         String updateTime = resourceRepository.save(resource);
@@ -52,6 +80,7 @@ public class ResourceController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteResource(@PathVariable String id) throws ExecutionException, InterruptedException {
         String result = resourceRepository.deleteById(id);
         messagingTemplate.convertAndSend("/topic/assets/updates", "ASSET_DELETED");

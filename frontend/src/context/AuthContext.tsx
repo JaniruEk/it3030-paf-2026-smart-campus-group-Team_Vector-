@@ -36,50 +36,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log("Setting up Firebase Auth state listener...");
     let unsubscribeProfile = () => {};
+    let unsubscribeAuth = () => {};
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      console.log("Firebase Auth triggered!", user);
-      // Clean up previous profile listener if it exists
-      unsubscribeProfile();
+    try {
+      unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+        console.log("Firebase Auth triggered!", user);
+        // Clean up previous profile listener if it exists
+        unsubscribeProfile();
 
-      if (user) {
-        try {
-          // Force refresh to get the latest custom claims (roles)
-          const idTokenResult = await user.getIdTokenResult(true);
-          const role = idTokenResult.claims.role as string || 'USER';
-          setUserRole(role);
+        if (user) {
+          try {
+            // Force refresh to get the latest custom claims (roles)
+            const idTokenResult = await user.getIdTokenResult(true);
+            const role = idTokenResult.claims.role as string || 'USER';
+            setUserRole(role);
 
-          // Subscribe to Firestore profile changes
-          unsubscribeProfile = onSnapshot(doc(db, 'profiles', user.uid), (docSnap) => {
-            if (docSnap.exists()) {
-              setUserProfile(docSnap.data() as UserProfile);
-            } else {
-              setUserProfile(null);
-            }
-          });
+            // Subscribe to Firestore profile changes
+            unsubscribeProfile = onSnapshot(doc(db, 'profiles', user.uid), (docSnap) => {
+              if (docSnap.exists()) {
+                setUserProfile(docSnap.data() as UserProfile);
+              } else {
+                setUserProfile(null);
+              }
+            });
 
-        } catch (e) {
-          console.error("Failed to fetch custom claims:", e);
-          setUserRole('USER');
+          } catch (e) {
+            console.error("Failed to fetch custom claims:", e);
+            setUserRole('USER');
+            setUserProfile(null);
+          }
+        } else {
+          setUserRole(null);
           setUserProfile(null);
         }
-      } else {
-        setUserRole(null);
-        setUserProfile(null);
-      }
-      setCurrentUser(user);
+        setCurrentUser(user);
+        setLoading(false);
+      }, (error) => {
+        console.error("Firebase Auth Error:", error);
+        setCurrentUser(null);
+        setUserRole('USER');
+        setLoading(false);
+      });
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+      setCurrentUser(null);
+      setUserRole('USER');
       setLoading(false);
-    }, (error) => {
-      console.error("Firebase Auth Error:", error);
-      setLoading(false);
-    });
+    }
 
     // Fallback in case Firebase silent-fails
     const timeout = setTimeout(() => {
-        if(loading) {
-            console.log("Firebase taking too long, forcefully releasing loading lock.");
-            setLoading(false);
-        }
+      if (loading) {
+        console.log("Firebase taking too long, forcefully releasing loading lock.");
+        setLoading(false);
+      }
     }, 4000);
 
     return () => {

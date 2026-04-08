@@ -12,6 +12,7 @@ import TechnicianRoute from './components/TechnicianRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminTickets from './pages/AdminTickets';
 import BookingForm from './components/Booking'
+import FacilitiesCatalogue from './components/FacilitiesCatalogue';
 import './App.css';
 
 function App() {
@@ -22,11 +23,12 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            
+
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tickets" element={<Tickets />} />
               <Route path="/Booking_Form" element={<BookingForm />} />
+              <Route path="/facilities" element={<FacilitiesCatalogue />} />
             </Route>
 
             {/* Secure Technician Area */}
@@ -39,7 +41,7 @@ function App() {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/tickets" element={<AdminTickets />} />
             </Route>
-            
+
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>

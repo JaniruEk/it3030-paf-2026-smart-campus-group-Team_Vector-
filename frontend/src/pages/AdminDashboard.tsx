@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import AppLayout from '../components/AppLayout';
+import FacilitiesCatalogue from '../components/FacilitiesCatalogue';
 import './AdminDashboard.css';
 import './Dashboard.css';
 
@@ -37,13 +38,13 @@ const AdminDashboard: React.FC = () => {
     
     // URL Persistence
     const [searchParams, setSearchParams] = useSearchParams();
-    const initialTab = searchParams.get('tab') as 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' || 'overview';
+    const initialTab = searchParams.get('tab') as 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'facilities' || 'overview';
 
     // New States
-    const [activeTab, setActiveTabInternal] = useState<'overview'|'audit'|'broadcast'|'bookings'|'assets'>(initialTab);
+    const [activeTab, setActiveTabInternal] = useState<'overview'|'audit'|'broadcast'|'bookings'|'assets'|'facilities'>(initialTab);
 
     // Synchronize state with URL
-    const setActiveTab = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets') => {
+    const setActiveTab = (tab: 'overview' | 'audit' | 'broadcast' | 'bookings' | 'assets' | 'facilities') => {
         setActiveTabInternal(tab);
         setSearchParams({ tab });
     };
@@ -863,6 +864,9 @@ const AdminDashboard: React.FC = () => {
                             </form>
                         </div>
                     </div>
+            {activeTab === 'facilities' && (
+                <FacilitiesCatalogue />
+            )}
                 </div>
             )}
             {selectedLog && (

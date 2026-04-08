@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
+import ProfileModal from '../components/ProfileModal';
+import { Building, ClipboardList, Calendar } from 'lucide-react';
 import './Dashboard.css';
 import './AdminDashboard.css';
 
 const Dashboard: React.FC = () => {
     const { currentUser, userRole } = useAuth();
-    const isProfileModalOpen = false;
+    const navigate = useNavigate();
+    const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
     const ticketActionPath = userRole === 'TECHNICIAN' ? '/technician/tickets' : '/tickets';
     const ticketActionLabel = userRole === 'TECHNICIAN' ? 'Manage Assigned Tickets' : 'Manage My Tickets';
@@ -30,7 +33,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 
                 <div style={{ padding: '2.5rem' }}>
-                    <div className="welcome-card" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', boxShadow: 'none' }}>
+                    <div className="welcome-card" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', boxShadow: 'none', marginBottom: '2rem' }}>
                         <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
                             <div style={{ flex: 1 }}>
                                 <h2 style={{ color: '#0f172a', marginBottom: '1rem' }}>Get Started</h2>
@@ -57,10 +60,43 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    <div className="modules-grid">
+                        <div className="module-card" onClick={() => navigate('/facilities')}>
+                            <div className="module-icon facilities-icon">
+                                <Building size={32} />
+                            </div>
+                            <h3>Facilities & Assets</h3>
+                            <p>Browse and manage campus resources including lecture halls, labs, meeting rooms, and equipment.</p>
+                            <button className="module-btn">View Facilities →</button>
+                        </div>
+
+                        <div className="module-card" onClick={() => navigate(ticketActionPath)}>
+                            <div className="module-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' }}>
+                                <ClipboardList size={32} />
+                            </div>
+                            <h3>Maintenance Tickets</h3>
+                            <p>Report issues or track the status of existing maintenance requests across campus.</p>
+                            <button className="module-btn" style={{ background: '#8b5cf6' }}>Manage Tickets →</button>
+                        </div>
+
+                        <div className="module-card" onClick={() => userRole !== 'TECHNICIAN' && navigate('/Booking_Form')}>
+                            <div className="module-icon" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
+                                <Calendar size={32} />
+                            </div>
+                            <h3>Facility Booking</h3>
+                            <p>Reserve classrooms, labs, or equipment for your academic and extracurricular needs.</p>
+                            <button className="module-btn" style={{ background: '#10b981' }}>Book Now →</button>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {isProfileModalOpen && (
+                <ProfileModal onClose={() => setProfileModalOpen(false)} />
+            )}
         </AppLayout>
     );
 };
 
 export default Dashboard;
+
