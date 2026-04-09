@@ -585,7 +585,7 @@ function BookingForm({ mode }: BookingFormProps) {
                           {b.adminReason || (b.status === 'PENDING' ? 'Processing...' : '-')}
                         </td>
                         <td>
-                          <div className="registry-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                         <div className="registry-actions">
                             {b.status === 'PENDING' && (
                               <button 
                                 className="action-icon-btn" 
