@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 import lk.sliit.it3030.smartcampus.repository.ResourceRepository;
 
-import java.time.LocalDateTime;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -59,7 +59,7 @@ public class AdminController {
         int totalUsers = 0;
         try {
             ListUsersPage page = FirebaseAuth.getInstance().listUsers(null);
-            for (ExportedUserRecord user : page.iterateAll()) {
+            for (@SuppressWarnings("unused") ExportedUserRecord ignored : page.iterateAll()) {
                 totalUsers++;
             }
         } catch (FirebaseAuthException e) {

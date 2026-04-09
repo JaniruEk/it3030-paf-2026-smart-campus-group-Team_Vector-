@@ -25,6 +25,7 @@ public class ResourceRepository {
         this.firestore = firestore;
     }
 
+    @SuppressWarnings("null")
     public String save(Resource resource) throws ExecutionException, InterruptedException {
         logger.info("Saving resource: {}", resource.getName());
         // If ID is null, generate a new one
@@ -37,6 +38,7 @@ public class ResourceRepository {
         return updateTime;
     }
 
+    @SuppressWarnings("null")
     public Resource findById(String id) throws ExecutionException, InterruptedException {
         var documentReference = firestore.collection(COLLECTION_NAME).document(id);
         var documentSnapshot = documentReference.get().get();
@@ -56,6 +58,7 @@ public class ResourceRepository {
         return resourceList;
     }
 
+    @SuppressWarnings("null")
     public String deleteById(String id) throws ExecutionException, InterruptedException {
         logger.info("Deleting resource with ID: {}", id);
         ApiFuture<WriteResult> writeResult = firestore.collection(COLLECTION_NAME).document(id).delete();

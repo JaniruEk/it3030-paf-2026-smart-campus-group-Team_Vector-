@@ -24,6 +24,7 @@ public class NotificationService {
         this.messagingTemplate = messagingTemplate;
     }
 
+    @SuppressWarnings("null")
     public Notification createNotification(String recipientId, String message, String type, String resourceId) throws ExecutionException, InterruptedException {
         String id = UUID.randomUUID().toString();
         Notification notification = Notification.builder()
@@ -49,6 +50,7 @@ public class NotificationService {
      * Broadcasts a notification to a specific role/group.
      * Uses a single WebSocket message for real-time delivery and saves individually for persistence in background.
      */
+    @SuppressWarnings("null")
     public void broadcastToRole(String message, String targetRole, List<String> recipientIds, String resourceId, String type) {
         // 1. Send one real-time message to the group topic
         Notification broadcastTemplate = Notification.builder()
@@ -119,6 +121,7 @@ public class NotificationService {
         return notifications;
     }
 
+    @SuppressWarnings("null")
     public void markAsRead(String id, String userId) throws ExecutionException, InterruptedException, IllegalArgumentException {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
         ApiFuture<DocumentSnapshot> future = docRef.get();
@@ -133,6 +136,7 @@ public class NotificationService {
         }
     }
 
+    @SuppressWarnings("null")
     public void deleteNotification(String id, String userId) throws ExecutionException, InterruptedException, IllegalArgumentException {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
         ApiFuture<DocumentSnapshot> future = docRef.get();

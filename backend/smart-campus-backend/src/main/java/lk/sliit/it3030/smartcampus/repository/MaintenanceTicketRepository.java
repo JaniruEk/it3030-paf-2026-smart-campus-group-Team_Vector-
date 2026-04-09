@@ -25,6 +25,7 @@ public class MaintenanceTicketRepository {
         this.firestore = firestore;
     }
 
+    @SuppressWarnings("null")
     public String save(MaintenanceTicket ticket) throws ExecutionException, InterruptedException {
         if (ticket.getId() == null || ticket.getId().isBlank()) {
             ticket.setId(java.util.UUID.randomUUID().toString());
@@ -58,6 +59,7 @@ public class MaintenanceTicketRepository {
         return tickets;
     }
 
+    @SuppressWarnings("null")
     public MaintenanceTicket findById(String id) throws ExecutionException, InterruptedException {
         DocumentSnapshot document = firestore.collection(COLLECTION_NAME).document(id).get().get();
         if (!document.exists()) {
@@ -66,6 +68,7 @@ public class MaintenanceTicketRepository {
         return document.toObject(MaintenanceTicket.class);
     }
 
+    @SuppressWarnings("null")
     public String deleteById(String id) throws ExecutionException, InterruptedException {
         ApiFuture<WriteResult> future = firestore.collection(COLLECTION_NAME)
                 .document(id)

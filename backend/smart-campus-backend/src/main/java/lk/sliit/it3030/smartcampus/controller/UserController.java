@@ -75,7 +75,7 @@ public class UserController {
 
             try {
                 String msg = "A system administrator has updated your account role to " + newRole + ". Welcome!";
-                notificationService.createNotification(userId, msg, "ROLE_UPDATE");
+                notificationService.createNotification(userId, msg, "ROLE_UPDATE", null);
                 
                 String performedBy = auth.getName();
                 try {

@@ -1,8 +1,4 @@
 package lk.sliit.it3030.smartcampus.model;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lk.sliit.it3030.smartcampus.model.BookingStatus;
-import java.time.LocalDate;
-import java.time.LocalTime;
 
 public class Booking {
 

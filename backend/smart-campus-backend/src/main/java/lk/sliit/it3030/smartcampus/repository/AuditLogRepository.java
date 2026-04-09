@@ -19,6 +19,7 @@ public class AuditLogRepository {
         this.firestore = firestore;
     }
 
+    @SuppressWarnings("null")
     public void save(AuditLog log) throws ExecutionException, InterruptedException {
         if (log.getId() == null || log.getId().isEmpty()) {
             log.setId(java.util.UUID.randomUUID().toString());

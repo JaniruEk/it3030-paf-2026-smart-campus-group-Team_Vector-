@@ -21,7 +21,6 @@ import lk.sliit.it3030.smartcampus.repository.BookingRepository;
 import lk.sliit.it3030.smartcampus.service.NotificationService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
-import java.time.LocalDate;
 import java.time.LocalTime;
 
 @RestController
@@ -209,7 +208,6 @@ public class BookingController {
     private String isResourceAvailable(Booking booking) throws ExecutionException, InterruptedException {
         LocalTime newStart = LocalTime.parse(booking.getStartTime());
         LocalTime newEnd = LocalTime.parse(booking.getEndTime());
-        LocalDate newDate = LocalDate.parse(booking.getDate());
 
         if (newStart.isAfter(newEnd) || newStart.equals(newEnd)) {
             return "End time must be after start time";

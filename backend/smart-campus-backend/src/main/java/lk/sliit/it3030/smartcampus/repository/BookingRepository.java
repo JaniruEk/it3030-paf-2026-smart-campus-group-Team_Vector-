@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutionException;
 import org.springframework.stereotype.Repository;
 
 import com.google.api.core.ApiFuture;
-import com.google.api.core.ApiFutures;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
@@ -50,6 +49,7 @@ public class BookingRepository {
         return userBookings;
     }
 
+    @SuppressWarnings("null")
     public String save(Booking bookingInfo) throws ExecutionException, InterruptedException {
         if (bookingInfo.getId() == null || bookingInfo.getId().isEmpty()) {
             bookingInfo.setId(java.util.UUID.randomUUID().toString());
@@ -74,6 +74,7 @@ public class BookingRepository {
         return list;
     }
 
+    @SuppressWarnings("null")
     public Booking findByID(String id) throws ExecutionException, InterruptedException {
         var documentReference = firestore.collection(collection).document(id);
         var documentSnapshot = documentReference.get().get();
@@ -85,6 +86,7 @@ public class BookingRepository {
         return null;
     }
 
+    @SuppressWarnings("null")
     public String updateStatus(String id, BookingStatus status, String adminReason) throws ExecutionException, InterruptedException {
         var documentReference = firestore.collection(collection).document(id);
         
@@ -96,16 +98,19 @@ public class BookingRepository {
         return future.get().getUpdateTime().toString();
     }
 
+    @SuppressWarnings("null")
     public String delete(String id) throws ExecutionException, InterruptedException {
         ApiFuture<WriteResult> writeResult = firestore.collection(collection).document(id).delete();
         return writeResult.get().getUpdateTime().toString();
     }
 
+    @SuppressWarnings("null")
     public String update(String id, Booking booking) throws ExecutionException, InterruptedException {
         ApiFuture<WriteResult> futureWrite = firestore.collection(collection).document(id).set(booking);
         return futureWrite.get().getUpdateTime().toString();
     }
 
+    @SuppressWarnings("null")
     public String hideForUser(String id) throws ExecutionException, InterruptedException {
         var documentReference = firestore.collection(collection).document(id);
         ApiFuture<WriteResult> future = documentReference.update("hiddenByUser", true);
