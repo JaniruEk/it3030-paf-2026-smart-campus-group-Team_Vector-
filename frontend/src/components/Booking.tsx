@@ -6,8 +6,7 @@ import {
   ChevronUp,
   ChevronDown,
   Timer,
-  X,
-  Calendar
+  X
 } from "lucide-react";
 import "./Booking_Form.css";
 import { useAuth } from "../context/AuthContext";
