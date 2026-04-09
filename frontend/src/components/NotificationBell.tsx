@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { Bell, Check, Trash2, MailOpen, Inbox, X } from 'lucide-react';
+import { Bell, Check, Trash2, MailOpen, Inbox, X, ExternalLink } from 'lucide-react';
 import { useNotifications, type Notification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './NotificationBell.css';
 
 const NotificationBell: React.FC = () => {
     const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+    const { userRole } = useAuth();
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
@@ -40,7 +44,55 @@ const NotificationBell: React.FC = () => {
         const t = type.toLowerCase();
         if (t === 'broadcast') return 'broadcast';
         if (t === 'role_update') return 'role_update';
+        if (t.includes('ticket') || t.includes('task')) return 'maintenance';
+        if (t.includes('booking') || t === 'status_change') return 'booking';
+        if (t.includes('asset')) return 'asset';
         return 'default';
+    };
+
+    const getNotificationRoute = (type: string) => {
+        const t = type.toUpperCase();
+        const role = userRole?.toUpperCase();
+        
+        console.log(`[NotificationBell] Calculating route for Type: ${t}, Role: ${role}`);
+
+        // Maintenance Tickets Mapping
+        if (t.includes('TICKET') || t.includes('TASK') || t.includes('COMMENT')) {
+            if (role === 'ADMIN') return '/admin/tickets';
+            if (role === 'TECHNICIAN') return '/technician/tickets';
+            return '/tickets';
+        }
+
+        // Bookings Mapping
+        if (t.includes('BOOKING') || t === 'STATUS_CHANGE') {
+            if (role === 'ADMIN') return '/admin?tab=bookings';
+            return '/dashboard'; 
+        }
+
+        // Assets Mapping
+        if (t.includes('ASSET')) {
+            if (role === 'ADMIN') return '/admin?tab=assets';
+            return '/facilities';
+        }
+
+        return null;
+    };
+
+    const handleActionClick = (n: Notification) => {
+        const route = getNotificationRoute(n.type);
+        console.log(`[NotificationBell] Action button clicked. Target Route: ${route}`);
+        
+        if (route) {
+            setSelectedNotification(null);
+            setIsOpen(false);
+            
+            // Allow state to settle before navigation
+            setTimeout(() => {
+                navigate(route);
+            }, 10);
+        } else {
+            console.warn(`[NotificationBell] No route found for notification type: ${n.type}`);
+        }
     };
 
     return (
@@ -121,10 +173,22 @@ const NotificationBell: React.FC = () => {
                         </div>
                         
                         <div className="modal-footer">
-                            <span className="modal-time">{new Date(selectedNotification.createdAt).toLocaleString()}</span>
-                            <div className="modal-status">
-                                {selectedNotification.isRead ? 'Status: Read' : 'Status: New'}
+                            <div className="modal-metadata">
+                                <span className="modal-time">{new Date(selectedNotification.createdAt).toLocaleString()}</span>
+                                <div className="modal-status">
+                                    {selectedNotification.isRead ? 'Status: Read' : 'Status: New'}
+                                </div>
                             </div>
+                            
+                            {getNotificationRoute(selectedNotification.type) && (
+                                <button 
+                                    className="action-link-btn"
+                                    onClick={() => handleActionClick(selectedNotification)}
+                                >
+                                    <ExternalLink size={16} />
+                                    View Resource Details
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

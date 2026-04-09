@@ -51,6 +51,21 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     loadResources();
   }, []);
 
+  const handleResourceChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const resId = e.target.value;
+    const res = resources.find(r => r.id === resId);
+    if (res) {
+        setFormData(prev => ({ 
+            ...prev, 
+            resourceId: res.id, 
+            resourceName: res.name,
+            location: res.location || prev.location 
+        }));
+    } else {
+        setFormData(prev => ({ ...prev, resourceId: '', resourceName: '' }));
+    }
+  };
+
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -64,12 +79,12 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         try {
-            // Compress image to max 800px to fit Firestore 1MB document limit
-            const dataUrl = await compressImage(file, 800, 0.7);
+            // Compress image to max 800px with higher compression (0.6) to fit 1MB limit
+            const dataUrl = await compressImage(file, 800, 0.6);
             
             newAttachments.push({
                 fileName: file.name,
-                contentType: 'image/jpeg', // compressImage returns JPEG
+                contentType: 'image/jpeg',
                 dataUrl
             });
         } catch (error) {
@@ -81,6 +96,13 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     setFormData(prev => ({
         ...prev,
         attachments: [...prev.attachments, ...newAttachments]
+    }));
+  };
+
+  const removeAttachment = (index: number) => {
+    setFormData(prev => ({
+        ...prev,
+        attachments: prev.attachments.filter((_, i) => i !== index)
     }));
   };
 
@@ -111,7 +133,9 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
       }
       onCreated(ticket);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to process ticket');
+      console.error("[CreateTicketModal] Full Submission Error:", error);
+      const detailedMsg = error.response?.data?.message || error.message || 'Failed to process ticket';
+      toast.error(`Error (${error.response?.status || 'Unknown'}): ${detailedMsg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -157,10 +181,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                     <select 
                         className="form-select"
                         value={formData.resourceId}
-                        onChange={(e) => {
-                            const res = resources.find(r => r.id === e.target.value);
-                            setFormData(prev => ({ ...prev, resourceId: e.target.value, resourceName: res?.name || '' }));
-                        }}
+                        onChange={handleResourceChange}
                     >
                         <option value="">Select Resource</option>
                         {resources.map(r => <option key={r.id} value={r.id}>{r.name} ({r.type})</option>)}
@@ -232,10 +253,26 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                         <div 
                           key={i} 
                           className="attachment-thumbnail-wrapper"
-                          onClick={() => setPreviewImage(a.dataUrl)}
                         >
-                          <img src={a.dataUrl} alt="preview" className="attachment-thumbnail" />
-                          <div className="thumb-overlay">View</div>
+                          <img 
+                            src={a.dataUrl} 
+                            alt="preview" 
+                            className="attachment-thumbnail" 
+                            onClick={() => setPreviewImage(a.dataUrl)}
+                          />
+                          <div className="thumb-actions">
+                             <button 
+                                type="button" 
+                                className="remove-thumb-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeAttachment(i);
+                                }}
+                             >
+                                <X size={12} />
+                             </button>
+                          </div>
+                          <div className="thumb-overlay" onClick={() => setPreviewImage(a.dataUrl)}>View</div>
                         </div>
                     ))}
                 </div>

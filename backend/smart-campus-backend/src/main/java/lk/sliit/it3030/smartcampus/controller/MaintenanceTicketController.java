@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/v1/tickets")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 public class MaintenanceTicketController {
 
     private final MaintenanceTicketService maintenanceTicketService;

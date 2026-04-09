@@ -32,8 +32,8 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                 Map<String, Object> claims = decodedToken.getClaims();
                 
-                if (claims != null && claims.containsKey("role")) {
-                    String role = (String) claims.get("role");
+                if (claims != null && claims.get("role") != null) {
+                    String role = claims.get("role").toString().toUpperCase();
                     authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
                 } else {
                     authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
