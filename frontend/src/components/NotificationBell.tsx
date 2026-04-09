@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, Check, Trash2, MailOpen, Inbox, X, ExternalLink } from 'lucide-react';
 import { useNotifications, type Notification } from '../context/NotificationContext';
@@ -12,6 +12,24 @@ const NotificationBell: React.FC = () => {
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    // Global click listener to close panel when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
 
     const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -116,7 +134,7 @@ const NotificationBell: React.FC = () => {
     };
 
     return (
-        <div className="notification-wrapper">
+        <div className="notification-wrapper" ref={panelRef}>
             <button className="icon-button" onClick={() => setIsOpen(!isOpen)} title="Notifications">
                 <Bell size={22} strokeWidth={2} />
                 {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
