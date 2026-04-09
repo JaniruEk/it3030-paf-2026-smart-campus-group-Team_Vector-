@@ -4,6 +4,7 @@ import { getAssignedTechnicianTickets, updateTicketStatusByTechnician } from '..
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
+import ImagePreviewModal from '../components/ImagePreviewModal';
 import './TechnicianTickets.css';
 import './AdminDashboard.css';
 
@@ -16,6 +17,7 @@ const TechnicianTickets = () => {
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const loadTickets = async () => {
     try {
@@ -120,9 +122,14 @@ const TechnicianTickets = () => {
                       {ticket.attachments && ticket.attachments.length > 0 ? (
                         <div className="attachment-previews">
                           {ticket.attachments.map((img, i) => (
-                            <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer">
+                            <div 
+                              key={i} 
+                              className="attachment-preview-wrapper"
+                              onClick={() => setPreviewImage(img.dataUrl)}
+                            >
                               <img src={img.dataUrl} alt="Evidence" />
-                            </a>
+                              <div className="preview-overlay">Preview</div>
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -178,6 +185,14 @@ const TechnicianTickets = () => {
           )}
         </div>
       </div>
+
+      {previewImage && (
+        <ImagePreviewModal
+          src={previewImage}
+          onClose={() => setPreviewImage(null)}
+          showDownload={true}
+        />
+      )}
     </AppLayout>
   );
 };

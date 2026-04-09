@@ -5,6 +5,7 @@ import apiClient from '../api/apiClient';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
+import ImagePreviewModal from '../components/ImagePreviewModal';
 import { CheckCircle } from 'lucide-react';
 import './AdminTickets.css';
 import './AdminDashboard.css';
@@ -52,6 +53,7 @@ const AdminTickets = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [actionTicketId, setActionTicketId] = useState<string | null>(null);
   const [selectedTechByTicket, setSelectedTechByTicket] = useState<Record<string, string>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const ticketCountByStatus = useMemo(() => {
     return tickets.reduce<Record<string, number>>((acc, ticket) => {
@@ -257,9 +259,14 @@ const AdminTickets = () => {
                         {ticket.attachments && ticket.attachments.length > 0 ? (
                           <div className="attachment-previews">
                             {ticket.attachments.map((img, i) => (
-                              <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer">
+                              <div 
+                                key={i} 
+                                className="attachment-preview-wrapper"
+                                onClick={() => setPreviewImage(img.dataUrl)}
+                              >
                                 <img src={img.dataUrl} alt="Incident" />
-                              </a>
+                                <div className="preview-overlay">Preview</div>
+                              </div>
                             ))}
                           </div>
                         ) : (
@@ -303,6 +310,14 @@ const AdminTickets = () => {
           )}
         </div>
       </div>
+
+      {previewImage && (
+        <ImagePreviewModal
+          src={previewImage}
+          onClose={() => setPreviewImage(null)}
+          showDownload={true}
+        />
+      )}
     </AppLayout>
   );
 };

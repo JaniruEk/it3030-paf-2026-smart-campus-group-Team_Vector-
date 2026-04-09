@@ -6,6 +6,7 @@ import { createTicket, getResources, updateMyTicket } from '../services/ticketSe
 import { compressImage } from '../utils/imageUtils';
 import type { CreateTicketPayload, Resource, TicketAttachment, MaintenanceTicket } from '../types/ticket';
 import { X, Upload, MapPin, Box } from 'lucide-react';
+import ImagePreviewModal from './ImagePreviewModal';
 import './CreateTicketModal.css';
 
 interface CreateTicketModalProps {
@@ -35,6 +36,8 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     preferredContactMethod: editingTicket?.preferredContactMethod || 'EMAIL',
     attachments: editingTicket?.attachments || [],
   });
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadResources = async () => {
@@ -226,7 +229,14 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                 </label>
                 <div className="attachment-preview-strip">
                     {formData.attachments.map((a, i) => (
-                        <img key={i} src={a.dataUrl} alt="preview" className="attachment-thumbnail" />
+                        <div 
+                          key={i} 
+                          className="attachment-thumbnail-wrapper"
+                          onClick={() => setPreviewImage(a.dataUrl)}
+                        >
+                          <img src={a.dataUrl} alt="preview" className="attachment-thumbnail" />
+                          <div className="thumb-overlay">View</div>
+                        </div>
                     ))}
                 </div>
              </section>
@@ -241,6 +251,14 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
           </button>
         </form>
       </div>
+
+      {previewImage && (
+        <ImagePreviewModal
+          src={previewImage}
+          onClose={() => setPreviewImage(null)}
+          showDownload={false}
+        />
+      )}
     </div>
   );
 };

@@ -7,6 +7,7 @@ import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
 import CreateTicketModal from '../components/CreateTicketModal';
+import ImagePreviewModal from '../components/ImagePreviewModal';
 import { Edit2, ClipboardList } from 'lucide-react';
 import './Tickets.css';
 import './AdminDashboard.css';
@@ -24,6 +25,7 @@ const Tickets = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<MaintenanceTicket | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -123,9 +125,13 @@ const Tickets = () => {
                         <label>Evidence</label>
                         <div className="attachment-strip">
                           {ticket.attachments.map((img, i) => (
-                            <a key={i} href={img.dataUrl} target="_blank" rel="noreferrer" className="strip-item">
+                            <div 
+                              key={i} 
+                              className="strip-item clickable"
+                              onClick={() => setPreviewImage(img.dataUrl)}
+                            >
                               <img src={img.dataUrl} alt="Evidence" />
-                            </a>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -169,6 +175,14 @@ const Tickets = () => {
           }}
           onCreated={handleTicketCreated}
           editingTicket={editingTicket || undefined}
+        />
+      )}
+
+      {previewImage && (
+        <ImagePreviewModal
+          src={previewImage}
+          onClose={() => setPreviewImage(null)}
+          showDownload={false} // Users don't necessarily need download for their own uploads, but we can enable if needed
         />
       )}
     </AppLayout>
