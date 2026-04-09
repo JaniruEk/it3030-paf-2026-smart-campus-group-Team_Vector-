@@ -43,7 +43,8 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     const loadResources = async () => {
       try {
         const data = await getResources();
-        setResources(data);
+        // Only show active resources for incident reporting
+        setResources(data.filter((r: Resource) => r.status === 'ACTIVE'));
       } catch (error) {
         toast.error('Failed to load campus resources');
       }
