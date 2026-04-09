@@ -57,6 +57,8 @@ const AdminTickets = () => {
   const [selectedTechByTicket, setSelectedTechByTicket] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  const [statusFilter, setStatusFilter] = useState<TicketDisplayStatus | 'ALL'>('ALL');
+
   // Prompt Modal State
   const [showPrompt, setShowPrompt] = useState(false);
   const [promptConfig, setPromptConfig] = useState<{
@@ -71,6 +73,11 @@ const AdminTickets = () => {
       return acc;
     }, {});
   }, [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    if (statusFilter === 'ALL') return tickets;
+    return tickets.filter((t) => normalizeStatus(t.status) === statusFilter);
+  }, [tickets, statusFilter]);
 
   const loadData = async () => {
     try {
@@ -204,23 +211,25 @@ const AdminTickets = () => {
           <p>Oversee campus-wide incidents, assign personnel, and monitor resolutions.</p>
         </div>
 
-        <div className="health-dashboard" style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
-          <div className="health-stat-card">
-            <span className="health-stat-title">Total Tickets</span>
-            <span className="health-stat-value">{tickets.length}</span>
-          </div>
-          <div className="health-stat-card">
-            <span className="health-stat-title">Open</span>
-            <span className="health-stat-value warning">{ticketCountByStatus.OPEN || 0}</span>
-          </div>
-          <div className="health-stat-card">
-            <span className="health-stat-title">In Progress</span>
-            <span className="health-stat-value ok" style={{ color: '#3b82f6' }}>{ticketCountByStatus.IN_PROGRESS || 0}</span>
-          </div>
-          <div className="health-stat-card">
-            <span className="health-stat-title">Resolved</span>
-            <span className="health-stat-value ok">{ticketCountByStatus.RESOLVED || 0}</span>
-          </div>
+
+        <div className="ticket-filters-bar">
+          <button 
+            className={`filter-btn ${statusFilter === 'ALL' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('ALL')}
+          >
+            All Tickets
+            <span className="filter-count">{tickets.length}</span>
+          </button>
+          {STATUS_OPTIONS.map(status => (
+            <button 
+              key={status}
+              className={`filter-btn ${statusFilter === status ? 'active' : ''}`}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status.replace('_', ' ')}
+              <span className="filter-count">{ticketCountByStatus[status] || 0}</span>
+            </button>
+          ))}
         </div>
 
         <div style={{ padding: '2rem' }}>
@@ -230,7 +239,7 @@ const AdminTickets = () => {
             <div className="empty-state">No tickets registered in the system.</div>
           ) : (
             <div className="admin-ticket-list">
-              {tickets.map((ticket) => {
+              {filteredTickets.map((ticket) => {
                 const ticketId = ticket.id!;
                 const status = normalizeStatus(ticket.status);
                 const priority = normalizePriority(ticket.priority);
