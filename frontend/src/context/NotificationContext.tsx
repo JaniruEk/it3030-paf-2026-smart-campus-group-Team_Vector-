@@ -142,6 +142,10 @@ export const useNotifications = () => useContext(NotificationContext);
                             position: 'top-right',
                             style: { fontWeight: 'bold' }
                         });
+
+                        // Play notification sound
+                        const audio = new Audio('/notification-sound.mp3');
+                        audio.play().catch(e => console.error("Error playing notification sound:", e));
                     }
                 } catch (err) {
                     console.error("Error parsing incoming message:", err);

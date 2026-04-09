@@ -1,6 +1,6 @@
 .notification-wrapper {
   position: relative;
-  z-index: 100;
+  z-index: 2005;
 }
 
 .icon-button {
@@ -61,7 +61,7 @@
   border-radius: 20px;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 10px 15px -10px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(226, 232, 240, 0.8);
-  z-index: 1000;
+  z-index: 2010;
   overflow: hidden;
   animation: panelSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: top right;

@@ -35,10 +35,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, activeTab, setActiveTab
                         borderRadius: 'var(--radius-lg)',
                         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
                         padding: '1rem 2rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        margin: '0 0 2rem 0'
+                        margin: '0 0 2rem 0',
+                        position: 'relative',
+                        zIndex: 2000
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
