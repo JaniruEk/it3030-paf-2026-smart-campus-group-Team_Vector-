@@ -57,10 +57,12 @@
   border: 1px solid #e2e8f0;
 }
 
-.technician-ticket-list {
+.technician-ticket-list, .ticket-list, .admin-ticket-list {
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .technician-ticket-card {

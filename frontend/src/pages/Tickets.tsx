@@ -145,8 +145,10 @@ const Tickets = () => {
                     </div>
                   )}
 
+                  <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+
                   <div className="card-footer">
-                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                    <div></div>
                     {ticket.status === 'OPEN' && (
                         <button 
                             className="edit-icon-btn"
