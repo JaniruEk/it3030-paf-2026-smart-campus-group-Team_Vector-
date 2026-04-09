@@ -25,7 +25,7 @@ const NotificationContext = createContext<NotificationContextType>({} as Notific
 
 export const useNotifications = () => useContext(NotificationContext);
 
-  export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, userRole } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -46,8 +46,8 @@ export const useNotifications = () => useContext(NotificationContext);
       if (response.ok) {
         const data = await response.json();
         const mappedData = data.map((n: any) => ({
-            ...n,
-            isRead: n.read !== undefined ? n.read : n.isRead
+          ...n,
+          isRead: n.read !== undefined ? n.read : n.isRead
         }));
         setNotifications(mappedData);
       }
@@ -96,7 +96,7 @@ export const useNotifications = () => useContext(NotificationContext);
         stompClient.onConnect = () => {
           if (!isMounted) return;
           console.log("WebSocket connected! Subscribing to topics...");
-          
+
           stompClient.subscribe(`/topic/notifications/${currentUser.uid}`, (message) => {
             handleIncomingNotification(message);
           });
@@ -119,38 +119,38 @@ export const useNotifications = () => useContext(NotificationContext);
         };
 
         stompClient.onWebSocketClose = () => {
-            if (isMounted) console.log("WebSocket connection closed.");
+          if (isMounted) console.log("WebSocket connection closed.");
         };
 
         const handleIncomingNotification = (message: any) => {
-            if (message.body) {
-                try {
-                    const rawNotification = JSON.parse(message.body);
-                    const newNotification: Notification = {
-                        ...rawNotification,
-                        isRead: rawNotification.read !== undefined ? rawNotification.read : rawNotification.isRead
-                    };
-                    
-                    if (isMounted) {
-                        setNotifications(prev => {
-                            if (prev.some(n => n.id === newNotification.id)) return prev;
-                            return [newNotification, ...prev];
-                        });
+          if (message.body) {
+            try {
+              const rawNotification = JSON.parse(message.body);
+              const newNotification: Notification = {
+                ...rawNotification,
+                isRead: rawNotification.read !== undefined ? rawNotification.read : rawNotification.isRead
+              };
 
-                        toast.success(newNotification.message, { 
-                            duration: 5000, 
-                            position: 'top-right',
-                            style: { fontWeight: 'bold' }
-                        });
+              if (isMounted) {
+                setNotifications(prev => {
+                  if (prev.some(n => n.id === newNotification.id)) return prev;
+                  return [newNotification, ...prev];
+                });
 
-                        // Play notification sound
-                        const audio = new Audio('/notification-sound.mp3');
-                        audio.play().catch(e => console.error("Error playing notification sound:", e));
-                    }
-                } catch (err) {
-                    console.error("Error parsing incoming message:", err);
-                }
+                toast.success(newNotification.message, {
+                  duration: 5000,
+                  position: 'top-right',
+                  style: { fontWeight: 'bold' }
+                });
+
+                // Play notification sound
+                const audio = new Audio('/notification-sound.mp3');
+                audio.play().catch(e => console.error("Error playing notification sound:", e));
+              }
+            } catch (err) {
+              console.error("Error parsing incoming message:", err);
             }
+          }
         };
 
         client = stompClient;
@@ -180,10 +180,10 @@ export const useNotifications = () => useContext(NotificationContext);
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n.id === id ? { ...n, isRead: true } : n)
       );
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
   };
 
   const deleteNotification = async (id: string) => {
@@ -195,7 +195,7 @@ export const useNotifications = () => useContext(NotificationContext);
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
   }
 
   const markAllAsRead = async () => {
@@ -206,10 +206,10 @@ export const useNotifications = () => useContext(NotificationContext);
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => ({ ...n, isRead: true }))
       );
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
