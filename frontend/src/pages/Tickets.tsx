@@ -3,13 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   getMyTickets,
+  deleteMyTicket,
 } from '../services/ticketService';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
 import CreateTicketModal from '../components/CreateTicketModal';
 import ImagePreviewModal from '../components/ImagePreviewModal';
-import { Edit2, ClipboardList } from 'lucide-react';
+import { Edit2, ClipboardList, Trash2 } from 'lucide-react';
 import './Tickets.css';
 import './AdminDashboard.css';
 
@@ -78,6 +79,20 @@ const Tickets = () => {
 
   const handleTicketUpdate = (updatedTicket: MaintenanceTicket) => {
     setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+  };
+  
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!window.confirm('Are you sure you want to delete this incident report? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      await deleteMyTicket(ticketId);
+      setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+      toast.success('Incident report deleted');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete ticket');
+    }
   };
 
   return (
@@ -173,16 +188,26 @@ const Tickets = () => {
                   <div className="card-footer">
                     <div></div>
                     {ticket.status === 'OPEN' && (
-                        <button 
-                            className="edit-icon-btn"
-                            onClick={() => {
-                                setEditingTicket(ticket);
-                                setIsModalOpen(true);
-                            }}
-                            title="Edit Ticket"
-                        >
-                            <Edit2 size={16} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button 
+                                className="edit-icon-btn"
+                                onClick={() => {
+                                    setEditingTicket(ticket);
+                                    setIsModalOpen(true);
+                                }}
+                                title="Edit Ticket"
+                            >
+                                <Edit2 size={16} />
+                            </button>
+                            <button 
+                                className="edit-icon-btn"
+                                onClick={() => handleDeleteTicket(ticket.id!)}
+                                title="Delete Ticket"
+                                style={{ color: '#ef4444' }}
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
                     )}
                   </div>
                 </article>

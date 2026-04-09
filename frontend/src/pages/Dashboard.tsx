@@ -60,7 +60,7 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="modern-card-grid">
+                    <div className="modules-grid">
                         <div className="module-card smooth-transition" onClick={() => navigate(ticketActionPath)}>
                             <div className="module-icon" style={{ background: 'linear-gradient(135deg, var(--campus-primary) 0%, var(--campus-primary-dark) 100%)' }}>
                                 <ClipboardList size={32} />

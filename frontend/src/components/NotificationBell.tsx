@@ -69,13 +69,26 @@ const NotificationBell: React.FC = () => {
         // Bookings Mapping
         else if (t.includes('BOOKING') || t === 'STATUS_CHANGE') {
             if (role === 'ADMIN') target = '/admin?tab=bookings';
-            else target = '/book-facility'; // Usually facilities for users, but deep link id will scroll to the registry
+            else {
+                // Determine if it's an asset or facility booking based on message content
+                const msg = n.message.toLowerCase();
+                if (msg.includes('asset') || msg.includes('equipment')) {
+                    target = '/book-asset';
+                } else {
+                    target = '/book-facility';
+                }
+            }
         }
-        // Assets Mapping
+        // Assets Catalogue Mapping
         else if (t.includes('ASSET')) {
             if (role === 'ADMIN') target = '/admin?tab=assets';
             else target = '/facilities';
-        } else {
+        } 
+        // Role Updates
+        else if (t === 'ROLE_UPDATE') {
+            target = role === 'ADMIN' ? '/admin' : '/dashboard';
+        }
+        else {
             return null;
         }
 

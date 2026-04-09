@@ -150,17 +150,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                 {/* ADMIN SPECIFIC TABS */}
                 {userRole === 'ADMIN' && (
                     <>
-                        <button className={`tab-btn smooth-transition ${activeTab === 'audit' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('audit')} title="Audit Logs">
-                            <Database size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Audit Database</span>}
-                        </button>
-                        <button className={`tab-btn smooth-transition ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
-                            <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Announcements</span>}
+                        <button className={`tab-btn smooth-transition ${activeTab === 'bookings' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('bookings')} title="Approve/Reject Requests">
+                            <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Booking Approvals</span>}
                         </button>
                         <button className={`tab-btn smooth-transition ${activeTab === 'facilities' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('facilities')} title="Facility Planning & Management">
                             <Building size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Facility Management</span>}
-                        </button>
-                        <button className={`tab-btn smooth-transition ${activeTab === 'bookings' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('bookings')} title="Approve/Reject Requests">
-                            <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Booking Approvals</span>}
                         </button>
                         <button className={`tab-btn smooth-transition ${activeTab === 'assets' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('assets')} title="Asset Management">
                             <Package size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Asset Catalogue</span>}
@@ -168,6 +162,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                         <Link className={`tab-btn smooth-transition ${isTicketsActive ? 'active' : ''}`} to="/admin/tickets" title="Manage Tickets">
                             <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Support Tickets</span>}
                         </Link>
+                        <button className={`tab-btn smooth-transition ${activeTab === 'audit' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('audit')} title="Audit Logs">
+                            <Database size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Audit Database</span>}
+                        </button>
+                        <button className={`tab-btn smooth-transition ${activeTab === 'broadcast' && !isTicketsActive ? 'active' : ''}`} onClick={() => handleTabClick('broadcast')} title="Global Broadcast">
+                            <ShieldAlert size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Announcements</span>}
+                        </button>
                     </>
                 )}
 

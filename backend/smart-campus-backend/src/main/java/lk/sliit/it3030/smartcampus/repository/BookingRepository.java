@@ -61,6 +61,19 @@ public class BookingRepository {
         return futureWrite.get().getUpdateTime().toString();
     }
 
+    public List<Booking> findByResourceAndDate(String resource, String date) throws ExecutionException, InterruptedException {
+        List<Booking> list = new ArrayList<>();
+        ApiFuture<QuerySnapshot> future = firestore.collection(collection)
+                .whereEqualTo("bookingResource", resource)
+                .whereEqualTo("date", date)
+                .get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+        for (QueryDocumentSnapshot doc : documents) {
+            list.add(doc.toObject(Booking.class));
+        }
+        return list;
+    }
+
     public Booking findByID(String id) throws ExecutionException, InterruptedException {
         var documentReference = firestore.collection(collection).document(id);
         var documentSnapshot = documentReference.get().get();
@@ -80,6 +93,22 @@ public class BookingRepository {
             "adminReason", adminReason
         );
         
+        return future.get().getUpdateTime().toString();
+    }
+
+    public String delete(String id) throws ExecutionException, InterruptedException {
+        ApiFuture<WriteResult> writeResult = firestore.collection(collection).document(id).delete();
+        return writeResult.get().getUpdateTime().toString();
+    }
+
+    public String update(String id, Booking booking) throws ExecutionException, InterruptedException {
+        ApiFuture<WriteResult> futureWrite = firestore.collection(collection).document(id).set(booking);
+        return futureWrite.get().getUpdateTime().toString();
+    }
+
+    public String hideForUser(String id) throws ExecutionException, InterruptedException {
+        var documentReference = firestore.collection(collection).document(id);
+        ApiFuture<WriteResult> future = documentReference.update("hiddenByUser", true);
         return future.get().getUpdateTime().toString();
     }
 }

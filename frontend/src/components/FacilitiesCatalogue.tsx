@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { createResource, deleteResource, getResources, updateResource } from '../api/resourceApi';
 import type { Resource } from '../api/resourceApi';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +29,8 @@ const FacilitiesCatalogue: React.FC<FacilitiesCatalogueProps> = ({ mode = 'all' 
   const { userRole } = useAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+  const highlightedResourceRef = useRef<string | null>(null);
   
   const currentResourceTypes = mode === 'facilities' 
     ? ['All', ...FACILITY_TYPES] 
@@ -74,6 +77,25 @@ const FacilitiesCatalogue: React.FC<FacilitiesCatalogueProps> = ({ mode = 'all' 
   useEffect(() => {
     loadResources();
   }, [searchTerm, typeFilter, locationFilter, minCapacity]);
+
+  // Deep-linking logic
+  useEffect(() => {
+    const targetId = searchParams.get('id');
+    if (targetId && !loading && resources.length > 0) {
+      const element = document.getElementById(`resource-${targetId}`);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          highlightedResourceRef.current = targetId;
+          element.classList.add('highlight-pulse');
+          setTimeout(() => {
+            element.classList.remove('highlight-pulse');
+            highlightedResourceRef.current = null;
+          }, 4000);
+        }, 100);
+      }
+    }
+  }, [searchParams, loading, resources]);
 
 
   const statusClass = (status: string) =>
@@ -195,7 +217,7 @@ const FacilitiesCatalogue: React.FC<FacilitiesCatalogueProps> = ({ mode = 'all' 
           </div>
         ) : (
           resources.map((resource) => (
-            <article key={resource.id} className="resource-card glass">
+            <article key={resource.id} id={`resource-${resource.id}`} className="resource-card glass">
               <div className="resource-card-header">
                 <div>
                   <span className="type-tag">{resource.type}</span>

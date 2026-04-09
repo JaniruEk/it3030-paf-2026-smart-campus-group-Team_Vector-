@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import lk.sliit.it3030.smartcampus.model.Booking;
@@ -18,6 +20,7 @@ import lk.sliit.it3030.smartcampus.model.BookingStatus;
 import lk.sliit.it3030.smartcampus.repository.BookingRepository;
 import lk.sliit.it3030.smartcampus.service.NotificationService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -38,33 +41,9 @@ public class BookingController {
     @PostMapping
     public String createBooking(@RequestBody Booking booking) {
         try {
-            LocalTime newStart = LocalTime.parse(booking.getStartTime());
-            LocalTime newEnd = LocalTime.parse(booking.getEndTime());
-            LocalDate newDate = LocalDate.parse(booking.getDate());
-
-            if (newStart.isAfter(newEnd) || newStart.equals(newEnd)) {
-                return "End time must be after start time";
-            }
-
-            List<Booking> existingBookings = bookingRepository.findAll();
-
-            if (existingBookings != null && !existingBookings.isEmpty()) {
-                for (Booking b : existingBookings) {
-                    LocalTime oldStart = LocalTime.parse(b.getStartTime());
-                    LocalTime oldEnd = LocalTime.parse(b.getEndTime());
-                    LocalDate oldDate = LocalDate.parse(b.getDate());
-
-                    if (b.getBookingResource().equals(booking.getBookingResource())
-                            && oldDate.equals(newDate)) {
-
-                        if (newStart.isBefore(oldEnd) && newEnd.isAfter(oldStart)) {
-                            if (b.getStatus() == BookingStatus.APPROVED
-                                    || b.getStatus() == BookingStatus.PENDING) {
-                                return "Resource already booked for this time";
-                            }
-                        }
-                    }
-                }
+            String availabilityError = isResourceAvailable(booking);
+            if (availabilityError != null) {
+                return availabilityError;
             }
 
             booking.setStatus(BookingStatus.PENDING);
@@ -97,9 +76,9 @@ public class BookingController {
             messagingTemplate.convertAndSend("/topic/bookings/admin/updates", "BOOKING_CREATED");
 
             return "Booking request submitted successfully";
-        } catch (ExecutionException | InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return "Error while creating booking";
+            return "Server Error: " + e.getMessage();
         }
     }
 
@@ -179,5 +158,88 @@ public class BookingController {
             e.printStackTrace();
             return "Error updating status and sending notification";
         }
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteBooking(@PathVariable String id, Authentication authentication) {
+        try {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            if (isAdmin) {
+                return bookingRepository.delete(id);
+            } else {
+                // Soft delete for users
+                Booking booking = bookingRepository.findByID(id);
+                if (booking != null) {
+                    // Update status to CANCELLED if it was active
+                    if (booking.getStatus() == BookingStatus.APPROVED || booking.getStatus() == BookingStatus.PENDING) {
+                        booking.setStatus(BookingStatus.CANCELLED);
+                    }
+                    booking.setHiddenByUser(true);
+                    bookingRepository.update(id, booking);
+                    
+                    // Notify Admin of cancellation
+                    messagingTemplate.convertAndSend("/topic/bookings/admin/updates", "BOOKING_CANCELLED");
+                    
+                    return "Booking removed from history";
+                }
+                return "Booking not found";
+            }
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return "Error processing request";
+        }
+    }
+
+    @PutMapping("/{id}")
+    public String updateBooking(@PathVariable String id, @RequestBody Booking booking) {
+        try {
+            String availabilityError = isResourceAvailable(booking);
+            if (availabilityError != null) {
+                return availabilityError;
+            }
+            return bookingRepository.update(id, booking);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Server Error: " + e.getMessage();
+        }
+    }
+
+    private String isResourceAvailable(Booking booking) throws ExecutionException, InterruptedException {
+        LocalTime newStart = LocalTime.parse(booking.getStartTime());
+        LocalTime newEnd = LocalTime.parse(booking.getEndTime());
+        LocalDate newDate = LocalDate.parse(booking.getDate());
+
+        if (newStart.isAfter(newEnd) || newStart.equals(newEnd)) {
+            return "End time must be after start time";
+        }
+
+        // Optimized query: Only check bookings for the same resource on the same date
+        List<Booking> existingBookings = bookingRepository.findByResourceAndDate(booking.getBookingResource(), booking.getDate());
+
+        if (existingBookings != null && !existingBookings.isEmpty()) {
+            for (Booking b : existingBookings) {
+                // Skip the same booking when checking for updates
+                if (booking.getId() != null && booking.getId().equals(b.getId())) {
+                    continue;
+                }
+
+                LocalTime oldStart = LocalTime.parse(b.getStartTime());
+                LocalTime oldEnd = LocalTime.parse(b.getEndTime());
+
+                // Check for overlap: (NewStart < OldEnd) AND (NewEnd > OldStart)
+                if (newStart.isBefore(oldEnd) && newEnd.isAfter(oldStart)) {
+                    if (b.getStatus() == BookingStatus.APPROVED || b.getStatus() == BookingStatus.PENDING) {
+                        return String.format("Collision detected: %s is already reserved for %s between %s and %s. Please select a different time slot.", 
+                            b.getBookingResource(), 
+                            b.getDate(), 
+                            b.getStartTime(), 
+                            b.getEndTime());
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

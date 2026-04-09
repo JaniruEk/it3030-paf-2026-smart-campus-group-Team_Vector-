@@ -23,6 +23,7 @@ public class Booking {
 
     private BookingStatus status; 
     private String adminReason; // reason for reject
+    private Boolean hiddenByUser = false;
 
     // Constructors
     public Booking() {}
@@ -30,7 +31,7 @@ public class Booking {
     public Booking(String id, String userId, String requesterUid, String bookingResource, String date,
                    String startTime, String endTime,
                    String purpose, Integer noOfAttendees,
-                   BookingStatus status, String adminReason) {
+                   BookingStatus status, String adminReason, Boolean hiddenByUser) {
         this.id = id;
         this.userId = userId;
         this.requesterUid = requesterUid;
@@ -42,6 +43,7 @@ public class Booking {
         this.noOfAttendees = noOfAttendees;
         this.status = status;
         this.adminReason = adminReason;
+        this.hiddenByUser = hiddenByUser;
     }
 
     // Getters
@@ -134,9 +136,11 @@ public class Booking {
         this.adminReason = adminReason;
     }
 
-    
+    public Boolean isHiddenByUser() {
+        return hiddenByUser != null ? hiddenByUser : false;
+    }
 
-    
-    
-    
+    public void setHiddenByUser(Boolean hiddenByUser) {
+        this.hiddenByUser = hiddenByUser;
+    }
 }

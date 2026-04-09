@@ -6,7 +6,19 @@ import {
   Moon,
   ChevronUp,
   ChevronDown,
-  Timer
+  Timer,
+  Edit3,
+  Trash2,
+  X,
+  Calendar,
+  User,
+  Activity,
+  FileText,
+  MessageCircle,
+  AlertCircle,
+  Users,
+  Hash,
+  MapPin
 } from "lucide-react";
 import "./Booking_Form.css";
 import { useAuth } from "../context/AuthContext";
@@ -29,6 +41,8 @@ function BookingForm({ mode }: BookingFormProps) {
   const [semester, setSemester] = useState("");
   const [purpose, setPurpose] = useState("");
   const [attendees, setAttendees] = useState("");
+  const [editingBooking, setEditingBooking] = useState<any | null>(null);
+  const [detailBooking, setDetailBooking] = useState<any | null>(null);
 
   // Luxe Time State
   const [sH, setSH] = useState("08");
@@ -135,7 +149,9 @@ function BookingForm({ mode }: BookingFormProps) {
     try {
       setLoadingHistory(true);
       const response = await apiClient.get(`/booking/user/${currentUser?.email}`);
-      setMyBookings(response.data || []);
+      const data = response.data || [];
+      // Filter out bookings hidden by user
+      setMyBookings(data.filter((b: any) => !b.hiddenByUser));
     } catch (err) {
       console.error("Failed to fetch booking history", err);
     } finally {
@@ -162,6 +178,59 @@ function BookingForm({ mode }: BookingFormProps) {
       }
   }, [searchParams, loadingHistory, myBookings]);
 
+  const handleEditBooking = (booking: any) => {
+    setEditingBooking(booking);
+    setDate(booking.date);
+    setResource(booking.bookingResource);
+    setPurpose(booking.purpose);
+    setAttendees(booking.noOfAttendees?.toString() || "");
+    
+    // Parse times
+    const [startH, startM] = booking.startTime.split(':');
+    const [endH, endM] = booking.endTime.split(':');
+    
+    const parseUnit = (h: string, m: string) => {
+      let hh = parseInt(h);
+      let p = "AM";
+      if (hh >= 12) {
+        p = "PM";
+        if (hh > 12) hh -= 12;
+      }
+      if (hh === 0) hh = 12;
+      return { h: hh.toString().padStart(2, '0'), m, p };
+    };
+
+    const s = parseUnit(startH, startM);
+    const e = parseUnit(endH, endM);
+    
+    setSH(s.h); setSM(s.m); setSP(s.p);
+    setEH(e.h); setEM(e.m); setEP(e.p);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteBooking = async (id: string) => {
+    if (!window.confirm("Are you sure you want to cancel this booking request?")) return;
+    try {
+      await apiClient.delete(`/booking/${id}`);
+      setMyBookings(prev => prev.filter(b => b.id !== id));
+    } catch (err) {
+      setError("Failed to delete booking");
+    }
+  };
+
+  const resetForm = () => {
+    setEditingBooking(null);
+    setDate("");
+    setResource("");
+    setPurpose("");
+    setAttendees("");
+    setSH("08"); setSM("00"); setSP("AM");
+    setEH("10"); setEM("00"); setEP("AM");
+    setConfirm("");
+    setError("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !resource || !userID || !year || !semester || !startTime || !endTime || !purpose || (isFacility && !attendees)) {
@@ -170,6 +239,7 @@ function BookingForm({ mode }: BookingFormProps) {
       return;
     }
     const bookingData = {
+      id: editingBooking?.id,
       userId: currentUser?.email || userID,
       requesterUid: currentUser?.uid || "",
       bookingResource: resource,
@@ -177,28 +247,131 @@ function BookingForm({ mode }: BookingFormProps) {
       startTime: startTime,
       endTime: endTime,
       purpose: purpose,
-      noOfAttendees: isFacility ? Number(attendees) : 1
+      noOfAttendees: isFacility ? Number(attendees) : 1,
+      status: editingBooking ? editingBooking.status : 'PENDING',
+      hiddenByUser: false
     };
     try {
-      const response = await apiClient.post("/booking", bookingData);
+      const response = editingBooking 
+        ? await apiClient.put(`/booking/${editingBooking.id}`, bookingData)
+        : await apiClient.post("/booking", bookingData);
+      
       const result = response.data;
-      if (response.status === 200 && !result.toLowerCase().includes("already booked")) {
+      if (response.status === 200 && typeof result === 'string' && result.toLowerCase().includes("successfully")) {
         setError("");
-        setConfirm("✅ " + result);
+        setConfirm(result.includes("updated") ? "✅ Booking updated successfully" : "✅ " + result);
         fetchMyBookings();
-        setDate("");
-        setResource("");
-        setPurpose("");
-        setAttendees("");
+        if (!editingBooking) resetForm();
       } else {
-        setError("⚠️ " + result);
+        setError("⚠️ " + (typeof result === 'string' ? result : "Unexpected server response"));
         setConfirm("");
       }
     } catch (err: any) {
-      const errorMsg = err.response?.data || "Failed to connect to backend";
+      const errorData = err.response?.data;
+      const errorMsg = (typeof errorData === 'string' ? errorData : errorData?.message) || "Failed to connect to backend";
       setError("⚠️ " + errorMsg);
       setConfirm("");
     }
+  };
+
+  const BookingDetailModal = ({ booking, onClose }: { booking: any, onClose: () => void }) => {
+    if (!booking) return null;
+
+    const handleEditFromModal = () => {
+      handleEditBooking(booking);
+      onClose();
+    };
+
+    const handleDeleteFromModal = () => {
+      handleDeleteBooking(booking.id);
+      onClose();
+    };
+
+    return (
+      <div className="booking-modal-overlay" onClick={onClose}>
+        <div className="booking-modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-inner-header">
+            <div className="modal-title-area">
+              <div className="detail-label" style={{ marginBottom: '0.25rem' }}>
+                {isFacility ? 'Facility Request' : 'Resource Allocation'}
+              </div>
+              <h2>{booking.bookingResource}</h2>
+            </div>
+            <button className="modal-close-btn" onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="modal-body">
+            <div className="detail-grid">
+              <div className="detail-item">
+                <span className="detail-label"><Calendar size={14} /> Date</span>
+                <span className="detail-value">{booking.date}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label"><Clock size={14} /> Time Window</span>
+                <span className="detail-value">{booking.startTime} - {booking.endTime}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label"><Activity size={14} /> Status</span>
+                <span className={`status-pill status-${booking.status?.toLowerCase()}`} style={{ alignSelf: 'flex-start' }}>
+                  {booking.status}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label"><Users size={14} /> Capacity / Qty</span>
+                <span className="detail-value">{booking.noOfAttendees} {isFacility ? 'Attendees' : 'Units'}</span>
+              </div>
+              <div className="detail-item full-width">
+                <span className="detail-label"><FileText size={14} /> Purpose</span>
+                <span className="detail-value">{booking.purpose}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label"><User size={14} /> Requester UID</span>
+                <span className="detail-value" style={{ fontSize: '0.8rem' }}>{booking.userId}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label"><Hash size={14} /> System ID</span>
+                <span className="detail-value" style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{booking.id}</span>
+              </div>
+            </div>
+
+            {(booking.adminReason || booking.status !== 'PENDING') && (
+              <div className="modal-system-response">
+                <div className="response-header">
+                  <MessageCircle size={14} />
+                  <span>Administrative Response</span>
+                </div>
+                <p className="response-text">
+                  {booking.adminReason || (booking.status === 'APPROVED' ? 'Your request has been officially approved. Please carry a digital copy of this receipt.' : 'Request is currently undergoing departmental review.')}
+                </p>
+              </div>
+            )}
+            
+            {booking.status === 'PENDING' && (
+              <div className="modal-footer-info" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.8rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px' }}>
+                <AlertCircle size={14} />
+                <span>You can still modify or withdraw this request.</span>
+              </div>
+            )}
+          </div>
+
+            <div className="modal-footer-actions">
+              <button className="modal-action-btn delete" onClick={handleDeleteFromModal}>
+                <Trash2 size={16} /> Delete From History
+              </button>
+              {booking.status === 'PENDING' && (
+                <button className="modal-action-btn edit" onClick={handleEditFromModal}>
+                  <Edit3 size={16} /> Edit Request
+                </button>
+              )}
+              {booking.status !== 'PENDING' && (
+                <button className="admin-submit-btn" onClick={onClose}>Dismiss</button>
+              )}
+            </div>
+        </div>
+      </div>
+    );
   };
 
   const increment = (val: string, setVal: any, max: number, min: number = 1) => {
@@ -248,12 +421,17 @@ function BookingForm({ mode }: BookingFormProps) {
         <div className="portal-header admin-portal-header">
           <div className="header-text">
             <h1 className="admin-page-title marquee">
-              {isFacility ? 'Venue Reservation' : 'Asset Request'}
+              {editingBooking ? `Edit ${isFacility ? 'Venue' : 'Asset'} Request` : (isFacility ? 'Venue Reservation' : 'Asset Request')}
             </h1>
             <p className="admin-page-subtitle">
-              Configure your institutional {isFacility ? 'venue' : 'equipment'} allocation.
+              {editingBooking ? 'Adjust your reservation details below.' : `Configure your institutional ${isFacility ? 'venue' : 'equipment'} allocation.`}
             </p>
           </div>
+          {editingBooking && (
+            <button className="secondary-btn" onClick={resetForm} style={{ marginBottom: '1rem' }}>
+              <X size={16} /> Cancel Edit
+            </button>
+          )}
         </div>
 
         <div className="portal-content">
@@ -352,7 +530,7 @@ function BookingForm({ mode }: BookingFormProps) {
 
               <div className="form-actions">
                 <button type="submit" className="admin-submit-btn">
-                  Confirm {isFacility ? 'Booking' : 'Request'}
+                  {editingBooking ? 'Update Request' : `Confirm ${isFacility ? 'Booking' : 'Request'}`}
                 </button>
               </div>
 
@@ -381,14 +559,20 @@ function BookingForm({ mode }: BookingFormProps) {
                     <tr>
                       <th>Date</th>
                       <th>{isFacility ? 'Facility' : 'Asset'}</th>
-                      <th>Time Interval</th>
+                       <th>Time Interval</th>
                       <th>Vector Status</th>
                       <th>System Response</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[...myBookings].reverse().map((b) => (
-                      <tr key={b.id} id={`booking-${b.id}`}>
+                      <tr 
+                        key={b.id} 
+                        id={`booking-${b.id}`} 
+                        className="clickable-row"
+                        onClick={() => setDetailBooking(b)}
+                      >
                         <td className="mono">{b.date}</td>
                         <td style={{ fontWeight: 700 }}>{b.bookingResource}</td>
                         <td className="mono" style={{ fontSize: '0.8rem' }}>{b.startTime} - {b.endTime}</td>
@@ -400,6 +584,33 @@ function BookingForm({ mode }: BookingFormProps) {
                         <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                           {b.adminReason || (b.status === 'PENDING' ? 'Processing...' : '-')}
                         </td>
+                        <td>
+                          <div className="registry-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                            {b.status === 'PENDING' && (
+                              <button 
+                                className="action-icon-btn" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditBooking(b);
+                                }}
+                                title="Edit Request"
+                              >
+                                <Edit3 size={16} />
+                              </button>
+                            )}
+                            <button 
+                              className="action-icon-btn delete" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteBooking(b.id);
+                              }}
+                              title="Delete Record"
+                              style={{ color: '#ef4444' }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -409,6 +620,13 @@ function BookingForm({ mode }: BookingFormProps) {
           </div>
         </div>
       </div>
+      
+      {detailBooking && (
+        <BookingDetailModal 
+          booking={detailBooking} 
+          onClose={() => setDetailBooking(null)} 
+        />
+      )}
     </AppLayout>
   );
 }
