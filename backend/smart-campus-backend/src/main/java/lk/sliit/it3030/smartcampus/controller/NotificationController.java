@@ -76,8 +76,11 @@ public class NotificationController {
                 }
             }
 
+            String resourceId = request.get("resourceId");
+            String type = request.getOrDefault("type", "BROADCAST");
+
             // 2. Perform Topic-based Broadcast + Background Persistence
-            notificationService.broadcastToRole(message, targetRole, matchUids);
+            notificationService.broadcastToRole(message, targetRole, matchUids, resourceId, type);
 
             String performedBy = auth.getName();
             try {

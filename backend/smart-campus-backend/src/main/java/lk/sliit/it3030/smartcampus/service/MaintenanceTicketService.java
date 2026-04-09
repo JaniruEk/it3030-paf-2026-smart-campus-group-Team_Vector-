@@ -67,7 +67,7 @@ public class MaintenanceTicketService {
                         ticket.getCategory(), 
                         ticket.getLocation(), 
                         ticket.getDescription());
-                    notificationService.broadcastToRole(msg, "ADMIN", adminUids);
+                    notificationService.broadcastToRole(msg, "ADMIN", adminUids, ticket.getId(), "TICKET_REPORTED");
                 }
             } catch (Exception e) {
                 System.err.println("Failed to notify admins of new ticket: " + e.getMessage());
@@ -187,16 +187,13 @@ public class MaintenanceTicketService {
                 
                 if (userRole.equals("USER")) {
                     // Notify Admin and Tech
-                    notificationService.broadcastToRole(msg, "ADMIN", List.of()); // broadcastToRole handles finding admin UIDs if needed, or I should fetch them.
-                    // Actually broadcastToRole takes List<String> recipientIds. 
-                    // I'll fetch them like I did in createTicket or modify broadcastToRole.
-                    // For now, I'll fetch admin and tech.
+                    notificationService.broadcastToRole(msg, "ADMIN", List.of(), ticket.getId(), "COMMENT_ADDED"); 
                     if (ticket.getAssignedTechnicianId() != null) {
-                        notificationService.createNotification(ticket.getAssignedTechnicianId(), msg, "COMMENT_ADDED");
+                        notificationService.createNotification(ticket.getAssignedTechnicianId(), msg, "COMMENT_ADDED", ticket.getId());
                     }
                 } else {
                     // Notify the reporting User
-                    notificationService.createNotification(ticket.getUserId(), msg, "COMMENT_ADDED");
+                    notificationService.createNotification(ticket.getUserId(), msg, "COMMENT_ADDED", ticket.getId());
                 }
             } catch (Exception e) {
                 System.err.println("Failed to send comment notification: " + e.getMessage());
@@ -314,7 +311,7 @@ public class MaintenanceTicketService {
                     String msg = String.format("Your %s incident at %s has been resolved. Please check the resolution notes.", 
                         ticket.getCategory(), 
                         ticket.getLocation());
-                    notificationService.createNotification(ticket.getUserId(), msg, "TICKET_RESOLVED");
+                    notificationService.createNotification(ticket.getUserId(), msg, "TICKET_RESOLVED", ticket.getId());
                 } catch (Exception e) {
                     System.err.println("Failed to notify user of resolved ticket: " + e.getMessage());
                 }
@@ -352,13 +349,13 @@ public class MaintenanceTicketService {
                 String userMsg = String.format("Your %s incident report has been assigned to a technician: %s", 
                     ticket.getCategory(), 
                     technicianEmail != null ? technicianEmail : "Support Team");
-                notificationService.createNotification(ticket.getUserId(), userMsg, "TICKET_ASSIGNED");
+                notificationService.createNotification(ticket.getUserId(), userMsg, "TICKET_ASSIGNED", ticket.getId());
 
                 // Notify Technician
                 String techMsg = String.format("New task assigned: %s incident at %s. Please review and start work.", 
                     ticket.getCategory(), 
                     ticket.getLocation());
-                notificationService.createNotification(technicianId, techMsg, "TASK_ASSIGNED");
+                notificationService.createNotification(technicianId, techMsg, "TASK_ASSIGNED", ticket.getId());
             } catch (Exception e) {
                 System.err.println("Failed to send assignment notifications: " + e.getMessage());
             }
@@ -416,7 +413,7 @@ public class MaintenanceTicketService {
                 if ("REJECTED".equals(normalizedStatus) && reason != null) {
                     msg += " Reason: " + reason;
                 }
-                notificationService.createNotification(ticket.getUserId(), msg, "TICKET_UPDATE");
+                notificationService.createNotification(ticket.getUserId(), msg, "TICKET_UPDATE", ticket.getId());
             } catch (Exception e) {
                 System.err.println("Failed to notify user of admin ticket update: " + e.getMessage());
             }

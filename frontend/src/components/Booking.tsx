@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import "./Booking_Form.css";
 import { useAuth } from "../context/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import AppLayout from "./AppLayout";
 import apiClient from "../api/apiClient";
 import { Client } from '@stomp/stompjs';
@@ -141,6 +142,25 @@ function BookingForm({ mode }: BookingFormProps) {
       setLoadingHistory(false);
     }
   };
+
+  const [searchParams] = useSearchParams();
+
+  // Deep-linking logic for bookings
+  useEffect(() => {
+      const targetId = searchParams.get('id');
+      if (targetId && !loadingHistory && myBookings.length > 0) {
+          const element = document.getElementById(`booking-${targetId}`);
+          if (element) {
+              setTimeout(() => {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                  element.classList.add('highlight-pulse');
+                  setTimeout(() => {
+                      element.classList.remove('highlight-pulse');
+                  }, 4000);
+              }, 100);
+          }
+      }
+  }, [searchParams, loadingHistory, myBookings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,7 +388,7 @@ function BookingForm({ mode }: BookingFormProps) {
                   </thead>
                   <tbody>
                     {[...myBookings].reverse().map((b) => (
-                      <tr key={b.id}>
+                      <tr key={b.id} id={`booking-${b.id}`}>
                         <td className="mono">{b.date}</td>
                         <td style={{ fontWeight: 700 }}>{b.bookingResource}</td>
                         <td className="mono" style={{ fontSize: '0.8rem' }}>{b.startTime} - {b.endTime}</td>

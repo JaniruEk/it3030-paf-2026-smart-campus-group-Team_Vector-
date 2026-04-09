@@ -150,6 +150,23 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    // Deep-linking logic for bookings
+    useEffect(() => {
+        const targetId = searchParams.get('id');
+        if (activeTab === 'bookings' && targetId && !loadingBookings && bookings.length > 0) {
+            const element = document.getElementById(`booking-${targetId}`);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                    element.classList.add('highlight-pulse');
+                    setTimeout(() => {
+                        element.classList.remove('highlight-pulse');
+                    }, 4000);
+                }, 100);
+            }
+        }
+    }, [activeTab, searchParams, loadingBookings, bookings]);
+
 
     const handleBookingStatusUpdate = async (id: string, status: string) => {
         try {
@@ -625,7 +642,7 @@ const AdminDashboard: React.FC = () => {
                                 </thead>
                                 <tbody>
                                     {bookings.map((booking) => (
-                                        <tr key={booking.id}>
+                                        <tr key={booking.id} id={`booking-${booking.id}`}>
                                             <td className="mono" style={{ whiteSpace: 'nowrap' }}>{booking.date}</td>
                                             <td style={{ fontWeight: 600, color: '#0f172a' }}>{booking.bookingResource}</td>
                                             <td className="mono" style={{ fontSize: '0.8rem' }}>{booking.userId}</td>

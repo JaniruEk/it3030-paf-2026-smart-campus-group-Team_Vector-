@@ -24,13 +24,14 @@ public class NotificationService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public Notification createNotification(String recipientId, String message, String type) throws ExecutionException, InterruptedException {
+    public Notification createNotification(String recipientId, String message, String type, String resourceId) throws ExecutionException, InterruptedException {
         String id = UUID.randomUUID().toString();
         Notification notification = Notification.builder()
                 .id(id)
                 .recipientId(recipientId)
                 .message(message)
                 .type(type)
+                .resourceId(resourceId)
                 .isRead(false)
                 .createdAt(new Date())
                 .build();
@@ -48,12 +49,13 @@ public class NotificationService {
      * Broadcasts a notification to a specific role/group.
      * Uses a single WebSocket message for real-time delivery and saves individually for persistence in background.
      */
-    public void broadcastToRole(String message, String targetRole, List<String> recipientIds) {
+    public void broadcastToRole(String message, String targetRole, List<String> recipientIds, String resourceId, String type) {
         // 1. Send one real-time message to the group topic
         Notification broadcastTemplate = Notification.builder()
                 .id("bc-" + System.currentTimeMillis())
                 .message(message)
-                .type("BROADCAST")
+                .type(type)
+                .resourceId(resourceId)
                 .isRead(false)
                 .createdAt(new Date())
                 .build();
@@ -72,7 +74,8 @@ public class NotificationService {
                             .id(id)
                             .recipientId(uid)
                             .message(message)
-                            .type("BROADCAST")
+                            .type(type)
+                            .resourceId(resourceId)
                             .isRead(false)
                             .createdAt(new Date())
                             .build();

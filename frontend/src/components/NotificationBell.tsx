@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, Check, Trash2, MailOpen, Inbox, X, ExternalLink } from 'lucide-react';
 import { useNotifications, type Notification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
@@ -44,42 +45,48 @@ const NotificationBell: React.FC = () => {
         const t = type.toLowerCase();
         if (t === 'broadcast') return 'broadcast';
         if (t === 'role_update') return 'role_update';
-        if (t.includes('ticket') || t.includes('task')) return 'maintenance';
+        if (t.includes('ticket') || t.includes('task') || t.includes('comment')) return 'maintenance';
         if (t.includes('booking') || t === 'status_change') return 'booking';
         if (t.includes('asset')) return 'asset';
         return 'default';
     };
 
-    const getNotificationRoute = (type: string) => {
-        const t = type.toUpperCase();
+    const getNotificationRoute = (n: Notification) => {
+        const t = n.type?.toUpperCase() || '';
         const role = userRole?.toUpperCase();
+        const rid = n.resourceId;
         
-        console.log(`[NotificationBell] Calculating route for Type: ${t}, Role: ${role}`);
+        console.log(`[NotificationBell] Calculating route for Type: ${t}, Role: ${role}, ResourceId: ${rid}`);
+
+        let target = '/';
 
         // Maintenance Tickets Mapping
         if (t.includes('TICKET') || t.includes('TASK') || t.includes('COMMENT')) {
-            if (role === 'ADMIN') return '/admin/tickets';
-            if (role === 'TECHNICIAN') return '/technician/tickets';
-            return '/tickets';
+            if (role === 'ADMIN') target = '/admin/tickets';
+            else if (role === 'TECHNICIAN') target = '/technician/tickets';
+            else target = '/tickets';
         }
-
         // Bookings Mapping
-        if (t.includes('BOOKING') || t === 'STATUS_CHANGE') {
-            if (role === 'ADMIN') return '/admin?tab=bookings';
-            return '/dashboard'; 
+        else if (t.includes('BOOKING') || t === 'STATUS_CHANGE') {
+            if (role === 'ADMIN') target = '/admin?tab=bookings';
+            else target = '/book-facility'; // Usually facilities for users, but deep link id will scroll to the registry
         }
-
         // Assets Mapping
-        if (t.includes('ASSET')) {
-            if (role === 'ADMIN') return '/admin?tab=assets';
-            return '/facilities';
+        else if (t.includes('ASSET')) {
+            if (role === 'ADMIN') target = '/admin?tab=assets';
+            else target = '/facilities';
+        } else {
+            return null;
         }
 
-        return null;
+        if (rid) {
+            target += (target.includes('?') ? '&' : '?') + `id=${rid}`;
+        }
+        return target;
     };
 
     const handleActionClick = (n: Notification) => {
-        const route = getNotificationRoute(n.type);
+        const route = getNotificationRoute(n);
         console.log(`[NotificationBell] Action button clicked. Target Route: ${route}`);
         
         if (route) {
@@ -154,7 +161,7 @@ const NotificationBell: React.FC = () => {
                 </div>
             )}
 
-            {selectedNotification && (
+            {selectedNotification && document.body && createPortal(
                 <div className="modal-overlay" onClick={() => setSelectedNotification(null)}>
                     <div className="detail-modal" onClick={(e) => e.stopPropagation()}>
                         <button className="modal-close" onClick={() => setSelectedNotification(null)}>
@@ -180,7 +187,7 @@ const NotificationBell: React.FC = () => {
                                 </div>
                             </div>
                             
-                            {getNotificationRoute(selectedNotification.type) && (
+                            {getNotificationRoute(selectedNotification) && (
                                 <button 
                                     className="action-link-btn"
                                     onClick={() => handleActionClick(selectedNotification)}
@@ -191,7 +198,8 @@ const NotificationBell: React.FC = () => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>, 
+                document.body
             )}
         </div>
     );

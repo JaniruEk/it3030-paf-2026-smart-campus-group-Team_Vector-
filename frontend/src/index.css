@@ -58,3 +58,27 @@ body, html {
 .smooth-transition {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+@keyframes highlight-pulse-animation {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(59, 130, 246, 0);
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: var(--campus-primary);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    background-color: transparent;
+  }
+}
+
+.highlight-pulse {
+  animation: highlight-pulse-animation 2s ease-in-out infinite;
+  border: 2px solid var(--campus-primary) !important;
+  border-radius: var(--radius-lg);
+  position: relative;
+  z-index: 10;
+}

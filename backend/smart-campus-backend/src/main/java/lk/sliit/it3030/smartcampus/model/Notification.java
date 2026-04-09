@@ -36,4 +36,8 @@ public class Notification {
     }
 
     private Date createdAt;
+    
+    @JsonProperty("resourceId")
+    @PropertyName("resourceId")
+    private String resourceId;
 }

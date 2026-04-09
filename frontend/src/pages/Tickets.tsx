@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   getMyTickets,
@@ -42,6 +43,28 @@ const Tickets = () => {
 
     loadData();
   }, []);
+
+  const [searchParams] = useSearchParams();
+  const highlightedTicketRef = useRef<string | null>(null);
+
+  // Deep-linking logic
+  useEffect(() => {
+    const targetId = searchParams.get('id');
+    if (targetId && !isLoading && tickets.length > 0) {
+      const element = document.getElementById(`ticket-${targetId}`);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          highlightedTicketRef.current = targetId;
+          element.classList.add('highlight-pulse');
+          setTimeout(() => {
+            element.classList.remove('highlight-pulse');
+            highlightedTicketRef.current = null;
+          }, 4000);
+        }, 100);
+      }
+    }
+  }, [searchParams, isLoading, tickets]);
 
   const handleTicketCreated = (newTicket: MaintenanceTicket) => {
     if (editingTicket) {
@@ -88,7 +111,7 @@ const Tickets = () => {
           ) : (
             <div className="modern-card-grid">
               {tickets.map((ticket) => (
-                <article key={ticket.id} className="modern-ticket-card smooth-transition">
+                <article key={ticket.id} id={`ticket-${ticket.id}`} className="modern-ticket-card smooth-transition">
                   <div className="card-top">
                     <div className="category-tag">
                       <span className="dot"></span>

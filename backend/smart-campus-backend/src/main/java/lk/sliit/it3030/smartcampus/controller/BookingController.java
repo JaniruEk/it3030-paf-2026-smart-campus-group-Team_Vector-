@@ -86,7 +86,7 @@ public class BookingController {
                             booking.getBookingResource(), 
                             booking.getDate(), 
                             booking.getUserId());
-                        notificationService.broadcastToRole(msg, "ADMIN", adminUids);
+                        notificationService.broadcastToRole(msg, "ADMIN", adminUids, booking.getId(), "BOOKING_REQUEST");
                     }
                 } catch (Exception e) {
                     System.err.println("Failed to notify admins of new booking: " + e.getMessage());
@@ -163,7 +163,8 @@ public class BookingController {
                 notificationService.createNotification(
                     booking.getRequesterUid(), 
                     message, 
-                    "BOOKING_UPDATE"
+                    "BOOKING_UPDATE",
+                    booking.getId()
                 );
             }
 

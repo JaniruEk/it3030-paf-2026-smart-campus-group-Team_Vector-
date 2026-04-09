@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getAssignedTechnicianTickets, updateTicketStatusByTechnician } from '../services/ticketService';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
 import ImagePreviewModal from '../components/ImagePreviewModal';
+import PromptModal from '../components/PromptModal';
 import './TechnicianTickets.css';
 import './AdminDashboard.css';
 
@@ -18,6 +20,15 @@ const TechnicianTickets = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const highlightedTicketRef = useRef<string | null>(null);
+  
+  // Prompt Modal State
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [promptConfig, setPromptConfig] = useState<{
+    ticketId: string;
+    status: string;
+  } | null>(null);
 
   const loadTickets = async () => {
     try {
@@ -35,16 +46,31 @@ const TechnicianTickets = () => {
     loadTickets();
   }, []);
 
-  const handleUpdateStatus = async (ticketId: string, status: string) => {
-    let resolutionNotes = '';
-    if (status === 'RESOLVED') {
-      const notes = window.prompt('Please enter resolution notes:');
-      if (notes === null) return;
-      resolutionNotes = notes.trim();
-      if (!resolutionNotes) {
-        toast.error('Resolution notes are required to resolve the ticket');
-        return;
+  // Deep-linking logic
+  useEffect(() => {
+    const targetId = searchParams.get('id');
+    if (targetId && !isLoading && tickets.length > 0) {
+      const element = document.getElementById(`ticket-${targetId}`);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          highlightedTicketRef.current = targetId;
+          element.classList.add('highlight-pulse');
+          // Remove highlight after animation
+          setTimeout(() => {
+            element.classList.remove('highlight-pulse');
+            highlightedTicketRef.current = null;
+          }, 4000);
+        }, 100);
       }
+    }
+  }, [searchParams, isLoading, tickets]);
+
+  const handleUpdateStatus = async (ticketId: string, status: string, resolutionNotes: string = '') => {
+    if (status === 'RESOLVED' && !resolutionNotes) {
+      setPromptConfig({ ticketId, status });
+      setShowPrompt(true);
+      return;
     }
 
     try {
@@ -82,7 +108,7 @@ const TechnicianTickets = () => {
           ) : (
             <div className="ticket-list">
               {tickets.map((ticket) => (
-                <article key={ticket.id} className="admin-ticket-card">
+                <article key={ticket.id} id={`ticket-${ticket.id}`} className="admin-ticket-card">
                   <div className="admin-ticket-card-head">
                     <div className="ticket-title-group">
                       <h3>{ticket.category} Issue</h3>
@@ -193,6 +219,26 @@ const TechnicianTickets = () => {
           showDownload={true}
         />
       )}
+
+      <PromptModal
+        isOpen={showPrompt}
+        title="Resolve Ticket"
+        message="Please provide a summary of the work done to resolve this issue. This will be shared with the reporter."
+        placeholder="e.g. Cleared the blockage in the 2nd floor pipe and verified flow."
+        confirmLabel="Resolve Ticket"
+        required
+        onConfirm={(notes) => {
+          if (promptConfig) {
+            handleUpdateStatus(promptConfig.ticketId, promptConfig.status, notes);
+          }
+          setShowPrompt(false);
+          setPromptConfig(null);
+        }}
+        onCancel={() => {
+          setShowPrompt(false);
+          setPromptConfig(null);
+        }}
+      />
     </AppLayout>
   );
 };

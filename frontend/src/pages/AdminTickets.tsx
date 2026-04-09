@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import { toast } from 'react-hot-toast';
 import apiClient from '../api/apiClient';
@@ -7,6 +8,7 @@ import CommentSection from '../components/CommentSection';
 import AppLayout from '../components/AppLayout';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import { CheckCircle } from 'lucide-react';
+import PromptModal from '../components/PromptModal';
 import './AdminTickets.css';
 import './AdminDashboard.css';
 
@@ -55,6 +57,13 @@ const AdminTickets = () => {
   const [selectedTechByTicket, setSelectedTechByTicket] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // Prompt Modal State
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [promptConfig, setPromptConfig] = useState<{
+    ticketId: string;
+    currentStatus: TicketDisplayStatus;
+  } | null>(null);
+
   const ticketCountByStatus = useMemo(() => {
     return tickets.reduce<Record<string, number>>((acc, ticket) => {
       const key = normalizeStatus(ticket.status);
@@ -83,6 +92,28 @@ const AdminTickets = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const [searchParams] = useSearchParams();
+  const highlightedTicketRef = useRef<string | null>(null);
+
+  // Deep-linking logic
+  useEffect(() => {
+    const targetId = searchParams.get('id');
+    if (targetId && !isLoading && tickets.length > 0) {
+      const element = document.getElementById(`ticket-${targetId}`);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          highlightedTicketRef.current = targetId;
+          element.classList.add('highlight-pulse');
+          setTimeout(() => {
+            element.classList.remove('highlight-pulse');
+            highlightedTicketRef.current = null;
+          }, 4000);
+        }, 100);
+      }
+    }
+  }, [searchParams, isLoading, tickets]);
 
   const getRequestedByEmail = (userId: string) => {
     const user = users.find((item) => item.uid === userId);
@@ -138,13 +169,17 @@ const AdminTickets = () => {
     setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
   };
 
-  const handleRejectTicket = async (ticketId: string, currentStatus: TicketDisplayStatus) => {
+  const handleRejectTicket = async (ticketId: string, currentStatus: TicketDisplayStatus, reason: string = '') => {
     if (currentStatus !== 'OPEN') {
       toast.error('Only OPEN tickets can be rejected.');
       return;
     }
-    const reason = window.prompt('Please enter a reason to reject this ticket:');
-    if (!reason?.trim()) return;
+
+    if (!reason) {
+      setPromptConfig({ ticketId, currentStatus });
+      setShowPrompt(true);
+      return;
+    }
 
     try {
       setActionTicketId(ticketId);
@@ -203,7 +238,7 @@ const AdminTickets = () => {
                 const isOpen = status === 'OPEN';
 
                 return (
-                  <article className="admin-ticket-card" key={ticketId}>
+                  <article className="admin-ticket-card" key={ticketId} id={`ticket-${ticketId}`}>
                     <div className="admin-ticket-card-head">
                       <div className="ticket-title-group">
                         <h3>{ticket.category} Issue</h3>
@@ -318,6 +353,26 @@ const AdminTickets = () => {
           showDownload={true}
         />
       )}
+
+      <PromptModal
+        isOpen={showPrompt}
+        title="Reject Ticket"
+        message="Please provide a clear reason for rejecting this maintenance request. This will be visible to the reporter."
+        placeholder="e.g. Duplicate request, or insufficient information provided."
+        confirmLabel="Reject Request"
+        required
+        onConfirm={(reason) => {
+          if (promptConfig) {
+            handleRejectTicket(promptConfig.ticketId, promptConfig.currentStatus, reason);
+          }
+          setShowPrompt(false);
+          setPromptConfig(null);
+        }}
+        onCancel={() => {
+          setShowPrompt(false);
+          setPromptConfig(null);
+        }}
+      />
     </AppLayout>
   );
 };

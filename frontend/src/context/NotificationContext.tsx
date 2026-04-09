@@ -11,6 +11,7 @@ export interface Notification {
   type: string;
   isRead: boolean;
   createdAt: string;
+  resourceId?: string;
 }
 
 interface NotificationContextType {

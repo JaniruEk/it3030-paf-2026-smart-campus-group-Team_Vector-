@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { getAssignedTechnicianTickets, updateTicketStatusByTechnician } from '../services/ticketService';
 import type { MaintenanceTicket } from '../types/ticket';
 import CommentSection from '../components/CommentSection';
+import PromptModal from '../components/PromptModal';
 import './TechnicianDashboard.css';
 
 const formatDate = (value?: string) => {
@@ -15,6 +16,13 @@ const TechnicianDashboard = () => {
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
+  
+  // Prompt Modal State
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [promptConfig, setPromptConfig] = useState<{
+    ticketId: string;
+    status: string;
+  } | null>(null);
 
   const loadTickets = async () => {
     try {
@@ -32,16 +40,11 @@ const TechnicianDashboard = () => {
     loadTickets();
   }, []);
 
-  const handleUpdateStatus = async (ticketId: string, status: string) => {
-    let resolutionNotes = '';
-    if (status === 'RESOLVED') {
-      const notes = window.prompt('Please enter resolution notes:');
-      if (notes === null) return;
-      resolutionNotes = notes.trim();
-      if (!resolutionNotes) {
-        toast.error('Resolution notes are required to resolve the ticket');
-        return;
-      }
+  const handleUpdateStatus = async (ticketId: string, status: string, resolutionNotes: string = '') => {
+    if (status === 'RESOLVED' && !resolutionNotes) {
+      setPromptConfig({ ticketId, status });
+      setShowPrompt(true);
+      return;
     }
 
     try {
@@ -133,6 +136,26 @@ const TechnicianDashboard = () => {
           ))}
         </div>
       )}
+
+      <PromptModal
+        isOpen={showPrompt}
+        title="Resolve Ticket"
+        message="Please provide a summary of the work done to resolve this issue."
+        placeholder="Describe how you fixed the issue..."
+        confirmLabel="Confirm Resolution"
+        required
+        onConfirm={(notes) => {
+          if (promptConfig) {
+            handleUpdateStatus(promptConfig.ticketId, promptConfig.status, notes);
+          }
+          setShowPrompt(false);
+          setPromptConfig(null);
+        }}
+        onCancel={() => {
+          setShowPrompt(false);
+          setPromptConfig(null);
+        }}
+      />
     </div>
   );
 };
