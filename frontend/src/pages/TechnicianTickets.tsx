@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getAssignedTechnicianTickets, updateTicketStatusByTechnician } from '../services/ticketService';
@@ -29,6 +29,33 @@ const TechnicianTickets = () => {
     ticketId: string;
     status: string;
   } | null>(null);
+
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  const ticketCounts = useMemo(() => {
+    return tickets.reduce((acc, ticket) => {
+      const status = ticket.status || 'OPEN';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    return tickets.filter((ticket) => {
+      const matchesStatus = statusFilter === 'ALL' || (ticket.status || 'OPEN') === statusFilter;
+      const matchesPriority = priorityFilter === 'ALL' || (ticket.priority || 'LOW') === priorityFilter;
+      
+      const desc = ticket.description || '';
+      const cat = ticket.category || '';
+      const loc = ticket.resourceName || ticket.location || '';
+      const searchStr = `${desc} ${cat} ${loc}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
+      return matchesStatus && matchesPriority && matchesSearch;
+    });
+  }, [tickets, statusFilter, priorityFilter, searchTerm]);
 
   const loadTickets = async () => {
     try {
@@ -100,14 +127,62 @@ const TechnicianTickets = () => {
           <p>Manage your assigned maintenance tasks and communicate with users.</p>
         </div>
 
+        <div className="ticket-filters-bar">
+          <div className="status-filters">
+            <button 
+              className={`filter-btn ${statusFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('ALL')}
+            >
+              All Assignments
+              <span className="filter-count">{tickets.length}</span>
+            </button>
+            {['IN_PROGRESS', 'RESOLVED', 'CLOSED'].map(status => (
+              <button 
+                key={status}
+                className={`filter-btn ${statusFilter === status ? 'active' : ''}`}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status.replace('_', ' ')}
+                <span className="filter-count">{ticketCounts[status] || 0}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="search-and-priority">
+            <div className="tech-search-box">
+              <input 
+                type="text" 
+                placeholder="Search description or location..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <select 
+              className="priority-select-filter"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              <option value="ALL">All Priorities</option>
+              <option value="LOW">Low Priority</option>
+              <option value="MEDIUM">Medium Priority</option>
+              <option value="HIGH">High Priority</option>
+              <option value="URGENT">Urgent Priority</option>
+            </select>
+          </div>
+        </div>
+
         <div style={{ padding: '2rem' }}>
           {isLoading ? (
             <div className="loading-state">Accessing maintenance queue...</div>
-          ) : tickets.length === 0 ? (
-            <div className="empty-state">No tickets assigned to you at the moment.</div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="empty-state">
+              {searchTerm || statusFilter !== 'ALL' || priorityFilter !== 'ALL' 
+                ? 'No tickets match your search filters.' 
+                : 'No tickets assigned to you at the moment.'}
+            </div>
           ) : (
             <div className="ticket-list">
-              {tickets.map((ticket) => (
+              {filteredTickets.map((ticket) => (
                 <article key={ticket.id} id={`ticket-${ticket.id}`} className="admin-ticket-card">
                   <div className="admin-ticket-card-head">
                     <div className="ticket-title-group">

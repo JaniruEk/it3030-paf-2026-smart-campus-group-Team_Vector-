@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
@@ -14,8 +14,6 @@ import { Edit2, ClipboardList, Trash2 } from 'lucide-react';
 import './Tickets.css';
 import './AdminDashboard.css';
 
-
-
 const formatDate = (value?: string): string => {
   if (!value) return 'N/A';
   const date = new Date(value);
@@ -28,6 +26,32 @@ const Tickets = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<MaintenanceTicket | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  const ticketCounts = useMemo(() => {
+    return tickets.reduce((acc, ticket) => {
+      const status = ticket.status.toUpperCase();
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    return tickets.filter((ticket) => {
+      const matchesStatus = statusFilter === 'ALL' || ticket.status.toUpperCase() === statusFilter;
+      
+      const desc = ticket.description || '';
+      const cat = ticket.category || '';
+      const loc = ticket.resourceName || ticket.location || '';
+      const searchStr = `${desc} ${cat} ${loc}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
+      
+      return matchesStatus && matchesSearch;
+    });
+  }, [tickets, statusFilter, searchTerm]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -109,23 +133,66 @@ const Tickets = () => {
         </div>
 
         <div className="portal-content">
+          <div className="ticket-filters-bar user-filters-bar">
+            <div className="status-filters">
+              <button 
+                className={`filter-btn ${statusFilter === 'ALL' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('ALL')}
+              >
+                All Reports
+                <span className="filter-count">{tickets.length}</span>
+              </button>
+              {(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'] as const).map(status => (
+                <button 
+                  key={status}
+                  className={`filter-btn ${statusFilter === status ? 'active' : ''}`}
+                  onClick={() => setStatusFilter(status)}
+                >
+                  {status.replace('_', ' ')}
+                  <span className="filter-count">{ticketCounts[status] || 0}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="search-and-priority">
+              <div className="tech-search-box">
+                <input 
+                  type="text" 
+                  placeholder="Search location or incident details..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="loading-container">
               <div className="spinner"></div>
               <span>Syncing with campus services...</span>
             </div>
-          ) : tickets.length === 0 ? (
+          ) : filteredTickets.length === 0 ? (
             <div className="empty-portal-state">
               <div className="empty-icon-shell">
                 <ClipboardList size={48} />
               </div>
-              <h3>No Incidents Reported</h3>
-              <p>Your campus workspace is currently clear of maintenance issues.</p>
-              <button className="secondary-btn" onClick={() => setIsModalOpen(true)}>Create First Report</button>
+              <h3>
+                {searchTerm || statusFilter !== 'ALL' 
+                  ? 'No matching incidents found' 
+                  : 'No Incidents Reported'}
+              </h3>
+              <p>
+                {searchTerm || statusFilter !== 'ALL' 
+                  ? 'Adjust your filters or search terms to find what you are looking for.' 
+                  : 'Your campus workspace is currently clear of maintenance issues.'}
+              </p>
+              {!searchTerm && statusFilter === 'ALL' && (
+                <button className="secondary-btn" onClick={() => setIsModalOpen(true)}>Create First Report</button>
+              )}
             </div>
           ) : (
             <div className="modern-card-grid">
-              {tickets.map((ticket) => (
+              {filteredTickets.map((ticket) => (
                 <article key={ticket.id} id={`ticket-${ticket.id}`} className="modern-ticket-card smooth-transition">
                   <div className="card-top">
                     <div className="category-tag">

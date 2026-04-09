@@ -190,6 +190,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                         <Link className={`tab-btn smooth-transition ${location.pathname === '/book-asset' ? 'active' : ''}`} to="/book-asset" title="Request an Asset">
                             <Package size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Inquire Assets</span>}
                         </Link>
+                        <Link className={`tab-btn smooth-transition ${location.pathname === '/my-bookings' ? 'active' : ''}`} to="/my-bookings" title="View historical records">
+                            <ClipboardList size={20} style={{ minWidth: '20px' }}/> {!isCollapsed && <span>Booking Registry</span>}
+                        </Link>
                     </>
                 )}
             </div>

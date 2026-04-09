@@ -58,6 +58,7 @@ const AdminTickets = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<TicketDisplayStatus | 'ALL'>('ALL');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Prompt Modal State
   const [showPrompt, setShowPrompt] = useState(false);
@@ -75,9 +76,15 @@ const AdminTickets = () => {
   }, [tickets]);
 
   const filteredTickets = useMemo(() => {
-    if (statusFilter === 'ALL') return tickets;
-    return tickets.filter((t) => normalizeStatus(t.status) === statusFilter);
-  }, [tickets, statusFilter]);
+    return tickets.filter((t) => {
+      const matchesStatus = statusFilter === 'ALL' || normalizeStatus(t.status) === statusFilter;
+      
+      const searchStr = `${t.description} ${t.category} ${t.location} ${t.resourceName || ''} ${t.userId}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
+      
+      return matchesStatus && matchesSearch;
+    });
+  }, [tickets, statusFilter, searchTerm]);
 
   const loadData = async () => {
     try {
@@ -213,23 +220,36 @@ const AdminTickets = () => {
 
 
         <div className="ticket-filters-bar">
-          <button 
-            className={`filter-btn ${statusFilter === 'ALL' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('ALL')}
-          >
-            All Tickets
-            <span className="filter-count">{tickets.length}</span>
-          </button>
-          {STATUS_OPTIONS.map(status => (
+          <div className="status-filters">
             <button 
-              key={status}
-              className={`filter-btn ${statusFilter === status ? 'active' : ''}`}
-              onClick={() => setStatusFilter(status)}
+              className={`filter-btn ${statusFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('ALL')}
             >
-              {status.replace('_', ' ')}
-              <span className="filter-count">{ticketCountByStatus[status] || 0}</span>
+              All Tickets
+              <span className="filter-count">{tickets.length}</span>
             </button>
-          ))}
+            {(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'] as const).map(status => (
+              <button 
+                key={status}
+                className={`filter-btn ${statusFilter === status ? 'active' : ''}`}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status.replace('_', ' ')}
+                <span className="filter-count">{ticketCountByStatus[status] || 0}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="search-and-priority">
+            <div className="tech-search-box">
+              <input 
+                type="text" 
+                placeholder="Search description, location or requester..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         <div style={{ padding: '2rem' }}>

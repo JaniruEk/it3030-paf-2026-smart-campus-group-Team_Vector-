@@ -11,6 +11,7 @@ import AdminRoute from './components/AdminRoute';
 import TechnicianRoute from './components/TechnicianRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminTickets from './pages/AdminTickets';
+import MyBookings from './pages/MyBookings';
 import BookingForm from './components/Booking'
 import FacilitiesCatalogue from './components/FacilitiesCatalogue';
 import './App.css';
@@ -29,6 +30,7 @@ function App() {
               <Route path="/tickets" element={<Tickets />} />
               <Route path="/book-facility" element={<BookingForm mode="facilities" />} />
               <Route path="/book-asset" element={<BookingForm mode="assets" />} />
+              <Route path="/my-bookings" element={<MyBookings />} />
               <Route path="/facilities" element={<FacilitiesCatalogue />} />
             </Route>
 

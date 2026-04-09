@@ -51,11 +51,24 @@ const AdminDashboard: React.FC = () => {
     }, [searchParams]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [loadingAudit, setLoadingAudit] = useState(false);
+    
+    // Booking Filters
+    const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('ALL');
+    const [bookingDateFilter, setBookingDateFilter] = useState<string>('');
+
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [broadcastRole, setBroadcastRole] = useState('ALL');
     const [isBroadcasting, setIsBroadcasting] = useState(false);
     const [selectedLog, setSelectedLog] = useState<any | null>(null);
     const [selectedStat, setSelectedStat] = useState<{title: string, value: any, desc: string, icon: any, color?: string} | null>(null);
+
+    const filteredBookings = React.useMemo(() => {
+        return bookings.filter(b => {
+            const matchesStatus = bookingStatusFilter === 'ALL' || b.status === bookingStatusFilter;
+            const matchesDate = !bookingDateFilter || b.date === bookingDateFilter;
+            return matchesStatus && matchesDate;
+        });
+    }, [bookings, bookingStatusFilter, bookingDateFilter]);
 
     const fetchUsers = async () => {
         try {
@@ -627,7 +640,46 @@ const AdminDashboard: React.FC = () => {
                     {loadingBookings ? (
                         <div className="loading-state">Syncing secure booking records...</div>
                     ) : (
-                        <div className="table-responsive">
+                        <>
+                            <div className="booking-filters">
+                                <div className="booking-filter-group">
+                                    <label>Filter by Date</label>
+                                    <input 
+                                        type="date" 
+                                        value={bookingDateFilter} 
+                                        onChange={(e) => setBookingDateFilter(e.target.value)}
+                                        className="booking-filter-input"
+                                    />
+                                </div>
+                                <div className="booking-filter-group">
+                                    <label>Filter by Status</label>
+                                    <select 
+                                        value={bookingStatusFilter} 
+                                        onChange={(e) => setBookingStatusFilter(e.target.value)}
+                                        className="booking-filter-select"
+                                    >
+                                        <option value="ALL">All Statuses</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="APPROVED">Approved</option>
+                                        <option value="REJECT">Rejected</option>
+                                    </select>
+                                </div>
+                                {(bookingDateFilter || bookingStatusFilter !== 'ALL') && (
+                                    <button 
+                                        className="clear-filter-btn"
+                                        onClick={() => {
+                                            setBookingDateFilter('');
+                                            setBookingStatusFilter('ALL');
+                                        }}
+                                    >
+                                        Clear Filters
+                                    </button>
+                                )}
+                                <div className="filter-stats">
+                                    Showing {filteredBookings.length} of {bookings.length} bookings
+                                </div>
+                            </div>
+                            <div className="table-responsive">
                             <table className="users-table">
                                 <thead>
                                     <tr>
@@ -641,7 +693,7 @@ const AdminDashboard: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {bookings.map((booking) => (
+                                    {filteredBookings.map((booking) => (
                                         <tr key={booking.id} id={`booking-${booking.id}`}>
                                             <td className="mono" style={{ whiteSpace: 'nowrap' }}>{booking.date}</td>
                                             <td style={{ fontWeight: 600, color: '#0f172a' }}>{booking.bookingResource}</td>
@@ -687,6 +739,7 @@ const AdminDashboard: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
+                        </>
                     )}
                 </div>
             )}
