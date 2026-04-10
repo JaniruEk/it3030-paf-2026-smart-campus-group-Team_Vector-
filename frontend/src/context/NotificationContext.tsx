@@ -4,6 +4,11 @@ import SockJS from 'sockjs-client';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
 
+/**
+ * Context for managing Real-Time Notifications.
+ * This file handles WebSocket connections via STOMP, manages notification history via REST,
+ * and coordinates system-wide alerts (toasts and sounds).
+ */
 export interface Notification {
   id: string;
   recipientId: string;
@@ -15,8 +20,8 @@ export interface Notification {
 }
 
 interface NotificationContextType {
-  notifications: Notification[];
-  unreadCount: number;
+  notifications: Notification[]; // List of received notifications
+  unreadCount: number; // Reactive count of unread notifications
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
@@ -24,21 +29,32 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType>({} as NotificationContextType);
 
+/**
+ * Custom hook to consume notification state and actions.
+ */
 export const useNotifications = () => useContext(NotificationContext);
 
+/**
+ * Provider component that maintains the WebSocket lifecycle and notification state.
+ */
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole } = useAuth(); // Consume auth state for role-based subscriptions
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  /**
+   * Dynamically determines the API URL based on the environment.
+   */
   const getApiUrl = () => {
     const host = window.location.hostname;
     return host === 'localhost' ? 'http://localhost:8080/api/v1' : `http://${host}:8080/api/v1`;
   };
 
   const notifyUrl = getApiUrl();
-  const wsUrl = notifyUrl.replace('/api/v1', '/ws');
+  const wsUrl = notifyUrl.replace('/api/v1', '/ws'); // Derive WebSocket endpoint from API URL
 
-  // Initial fetch REST to get history
+  /**
+   * Fetches historical notifications via REST API.
+   */
   const fetchNotifications = async (token: string) => {
     try {
       const response = await fetch(`${notifyUrl}/notifications`, {
@@ -46,6 +62,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
       if (response.ok) {
         const data = await response.json();
+        // Ensure consistent 'isRead' property mapping from the backend
         const mappedData = data.map((n: any) => ({
           ...n,
           isRead: n.read !== undefined ? n.read : n.isRead
@@ -61,28 +78,35 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     let client: Client | null = null;
     let isMounted = true;
 
+    // Reset notifications if the user logs out
     if (!currentUser) {
       setNotifications([]);
       return;
     }
 
+    /**
+     * Establishes and configures the WebSocket connection.
+     */
     const connectWebSocket = async () => {
       try {
         const token = await currentUser.getIdToken();
         if (!isMounted) return;
 
+        // Load existing notifications first
         await fetchNotifications(token);
         if (!isMounted) return;
 
         console.log(`Initializing WebSocket for user ${currentUser.uid} with role ${userRole || 'pending'}`);
 
+        // Initialize the STOMP client using SockJS for broad browser compatibility
         const stompClient = new Client({
           webSocketFactory: () => new SockJS(wsUrl),
-          reconnectDelay: 5000,
+          reconnectDelay: 5000, // Automaticaly retry connection every 5 seconds if it drops
           heartbeatIncoming: 4000,
           heartbeatOutgoing: 4000,
         });
 
+        // Inject fresh Firebase JWT tokens into the CONNECT headers
         stompClient.beforeConnect = async () => {
           try {
             const freshToken = await currentUser.getIdToken(true);
@@ -98,14 +122,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           if (!isMounted) return;
           console.log("WebSocket connected! Subscribing to topics...");
 
+          // 1. Subscribe to the user's private notification channel
           stompClient.subscribe(`/topic/notifications/${currentUser.uid}`, (message) => {
             handleIncomingNotification(message);
           });
 
+          // 2. Subscribe to general system broadcasts
           stompClient.subscribe('/topic/broadcasts/ALL', (message) => {
             handleIncomingNotification(message);
           });
 
+          // 3. Subscribe to role-specific topics (e.g., /topic/broadcasts/ADMIN)
           if (userRole) {
             const roleTopic = `/topic/broadcasts/${userRole.toUpperCase()}`;
             console.log(`Subscribing to role topic: ${roleTopic}`);
@@ -123,6 +150,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           if (isMounted) console.log("WebSocket connection closed.");
         };
 
+        /**
+         * Processes messages received fromsubscribed WebSocket channels.
+         */
         const handleIncomingNotification = (message: any) => {
           if (message.body) {
             try {
@@ -133,18 +163,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
               };
 
               if (isMounted) {
+                // Update local state and avoid duplicate IDs
                 setNotifications(prev => {
                   if (prev.some(n => n.id === newNotification.id)) return prev;
                   return [newNotification, ...prev];
                 });
 
+                // Display a visual pop-up alert
                 toast.success(newNotification.message, {
                   duration: 5000,
                   position: 'top-right',
                   style: { fontWeight: 'bold' }
                 });
 
-                // Play notification sound
+                // Play an audible alert sound
                 const audio = new Audio('/notification-sound.mp3');
                 audio.play().catch(e => console.error("Error playing notification sound:", e));
               }
@@ -155,7 +187,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
 
         client = stompClient;
-        stompClient.activate();
+        stompClient.activate(); // Turn on the WebSocket client
 
       } catch (e) {
         console.error("Failed to initialize WebSocket", e);
@@ -168,11 +200,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       isMounted = false;
       if (client) {
         console.log("Deactivating WebSocket client...");
-        client.deactivate();
+        client.deactivate(); // Ensure resources are cleaned up on unmount
       }
     };
   }, [currentUser, userRole]);
 
+  /**
+   * API Handlers for notification actions (Read, Delete, Mark All).
+   */
   const markAsRead = async (id: string) => {
     if (!currentUser) return;
     try {
@@ -221,3 +256,4 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     </NotificationContext.Provider>
   );
 };
+

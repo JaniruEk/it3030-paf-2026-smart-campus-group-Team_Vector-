@@ -4,15 +4,20 @@ import type { User } from 'firebase/auth';
 import { auth, loginWithGoogle, logout, db } from '../config/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
+/**
+ * Context for managing Global Authentication state.
+ * This file coordinates Firebase Authentication, custom claims for Role-Based Access Control (RBAC),
+ * and dynamic profile data fetching from Cloud Firestore.
+ */
 interface UserProfile {
   photoURL: string;
 }
 
 interface AuthContextType {
-  currentUser: User | null;
-  userProfile: UserProfile | null;
-  userRole: string | null;
-  loading: boolean;
+  currentUser: User | null; // The low-level Firebase User object
+  userProfile: UserProfile | null; // Extended profile data (e.g., photo) from Firestore
+  userRole: string | null; // The user's role determined via Firebase Custom Claims
+  loading: boolean; // Flag to indicate if auth state is still being initialized
   login: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   signupWithEmail: (email: string, pass: string) => Promise<void>;
@@ -25,8 +30,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+/**
+ * Custom hook to consume the AuthContext within components.
+ */
 export const useAuth = () => useContext(AuthContext);
 
+/**
+ * Provider component that wraps the application to provide authentication state.
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -35,23 +46,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log("Setting up Firebase Auth state listener...");
-    let unsubscribeProfile = () => {};
-    let unsubscribeAuth = () => {};
+    let unsubscribeProfile = () => {}; // Storage for the Firestore profile listener cleanup
+    let unsubscribeAuth = () => {}; // Storage for the Firebase Auth listener cleanup
 
     try {
+      // Listen for authentication changes (login, logout, token refresh)
       unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
         console.log("Firebase Auth triggered!", user);
-        // Clean up previous profile listener if it exists
-        unsubscribeProfile();
+        unsubscribeProfile(); // Stop listening to the previous user's profile
 
         if (user) {
           try {
-            // Force refresh to get the latest custom claims (roles)
+            // Force refresh the token to retrieve the latest Custom Claims (like 'role')
             const idTokenResult = await user.getIdTokenResult(true);
-            const role = idTokenResult.claims.role as string || 'USER';
+            const role = idTokenResult.claims.role as string || 'USER'; // Default to 'USER' if no role claim exists
             setUserRole(role);
 
-            // Subscribe to Firestore profile changes
+            // Set up a real-time listener for the user's Firestore profile document
             unsubscribeProfile = onSnapshot(doc(db, 'profiles', user.uid), (docSnap) => {
               if (docSnap.exists()) {
                 setUserProfile(docSnap.data() as UserProfile);
@@ -66,11 +77,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUserProfile(null);
           }
         } else {
+          // Clear state on logout
           setUserRole(null);
           setUserProfile(null);
         }
-        setCurrentUser(user);
-        setLoading(false);
+        setCurrentUser(user); // Update the current session user
+        setLoading(false); // Signal that the initial auth check is complete
       }, (error) => {
         console.error("Firebase Auth Error:", error);
         setCurrentUser(null);
@@ -84,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
 
-    // Fallback in case Firebase silent-fails
+    // Safeguard to prevent an infinite "loading" state if Firebase takes too long
     const timeout = setTimeout(() => {
       if (loading) {
         console.log("Firebase taking too long, forcefully releasing loading lock.");
@@ -94,40 +106,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
         clearTimeout(timeout);
-        unsubscribeAuth();
-        unsubscribeProfile();
+        unsubscribeAuth(); // Clean up Auth listener on unmount
+        unsubscribeProfile(); // Clean up Profile listener on unmount
     };
   }, []);
 
-  const login = async () => {
-    await loginWithGoogle();
-  };
-
-  const loginWithEmail = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
-  };
-
-  const signupWithEmail = async (email: string, pass: string) => {
-    await createUserWithEmailAndPassword(auth, email, pass);
-  };
-
+  /**
+   * Helper methods for various authentication flows.
+   */
+  const login = async () => { await loginWithGoogle(); }; // Google OAuth Login
+  const loginWithEmail = async (email: string, pass: string) => { await signInWithEmailAndPassword(auth, email, pass); }; // Email/Pass Login
+  const signupWithEmail = async (email: string, pass: string) => { await createUserWithEmailAndPassword(auth, email, pass); }; // New Account Creation
   const updateUserPassword = async (newPass: string) => {
-    if (auth.currentUser) {
-      await updatePassword(auth.currentUser, newPass);
-    } else {
-      throw new Error("No user is currently logged in.");
-    }
+    if (auth.currentUser) { await updatePassword(auth.currentUser, newPass); }
+    else { throw new Error("No user is currently logged in."); }
   };
 
+  /**
+   * Updates the user's public profile and synced Firestore profile data.
+   */
   const updateUserProfile = async (displayName: string, photoURL: string) => {
     if (auth.currentUser) {
-      // Update Auth display name (this doesn't have the strict length limit of photoURL)
+      // Update Firebase Auth profile (display name)
       await updateProfile(auth.currentUser, { displayName });
       
-      // Save the Base64 photoURL to Firestore (has massive 1MB limit)
+      // Update extended profile (Base64 image) in Firestore due to its higher capacity
       await setDoc(doc(db, 'profiles', auth.currentUser.uid), { photoURL }, { merge: true });
 
-      // Re-trigger auth state change to update local currentUser state
+      // Refresh local state by cloning the current user object
       const user = auth.currentUser;
       setCurrentUser({...user} as User);
     } else {
@@ -135,19 +141,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
-  };
-
-  const sendVerificationEmail = async () => {
-    if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-  };
+  const resetPassword = async (email: string) => { await sendPasswordResetEmail(auth, email); }; // Send trigger for password reset
+  const sendVerificationEmail = async () => { if (auth.currentUser) { await sendEmailVerification(auth.currentUser); } }; // Verify user email
+  const handleLogout = async () => { await logout(); }; // Perform system logout
 
   const value = {
     currentUser,
@@ -166,8 +162,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {!loading && children} // Render children only after the initial auth state is resolved
     </AuthContext.Provider>
   );
 };
+
 

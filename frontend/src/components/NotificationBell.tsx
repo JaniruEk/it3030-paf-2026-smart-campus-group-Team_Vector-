@@ -6,15 +6,23 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './NotificationBell.css';
 
+/**
+ * UI Component for the Global Notification Bell.
+ * This component displays the unread notification count, provides a drop-down list of alerts,
+ * and handles navigation to related resources (Tickets, Bookings, etc.) based on the notification type and user role.
+ */
 const NotificationBell: React.FC = () => {
+    // Consume notification state and actions from NotificationContext
     const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
-    const { userRole } = useAuth();
+    const { userRole } = useAuth(); // Consume user role for intelligent navigation routing
     const navigate = useNavigate();
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-    const panelRef = useRef<HTMLDivElement>(null);
+    const [isOpen, setIsOpen] = useState(false); // Controls the visibility of the notification drop-down panel
+    const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null); // State for the detail modal
+    const panelRef = useRef<HTMLDivElement>(null); // Reference for detecting clicks outside the panel
 
-    // Global click listener to close panel when clicking outside
+    /**
+     * Effect to close the notification panel when the user clicks anywhere else in the document.
+     */
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
@@ -31,23 +39,29 @@ const NotificationBell: React.FC = () => {
         };
     }, [isOpen]);
 
+    /**
+     * Handlers for individual and bulk notification actions.
+     */
     const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Prevent the parent click handler from opening the modal
         await markAsRead(id);
     };
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Prevent the parent click handler from opening the modal
         await deleteNotification(id);
     };
 
     const handleItemClick = (n: Notification) => {
-        setSelectedNotification(n);
+        setSelectedNotification(n); // Open the detail modal
         if (!n.isRead) {
-            markAsRead(n.id);
+            markAsRead(n.id); // Automatically mark as read when viewed
         }
     };
 
+    /**
+     * Formats the ISO date string into a human-readable relative time (e.g., "5m ago").
+     */
     const formatTime = (dateStr: string) => {
         const date = new Date(dateStr);
         const now = new Date();
@@ -59,6 +73,9 @@ const NotificationBell: React.FC = () => {
         return date.toLocaleDateString();
     };
 
+    /**
+     * Determines the CSS class for the notification tag based on the alert category.
+     */
     const getTagClass = (type: string) => {
         const t = type.toLowerCase();
         if (t === 'broadcast') return 'broadcast';
@@ -69,26 +86,27 @@ const NotificationBell: React.FC = () => {
         return 'default';
     };
 
+    /**
+     * Intelligent Routing Logic: Determines exactly which page a user should be sent to
+     * when they click "View Resource", based on the notification type and their specific role.
+     */
     const getNotificationRoute = (n: Notification) => {
         const t = n.type?.toUpperCase() || '';
         const role = userRole?.toUpperCase();
-        const rid = n.resourceId;
+        const rid = n.resourceId; // ID of the specific ticket/booking/asset
         
-        console.log(`[NotificationBell] Calculating route for Type: ${t}, Role: ${role}, ResourceId: ${rid}`);
-
         let target = '/';
 
-        // Maintenance Tickets Mapping
+        // Role-based routing for Maintenance tasks
         if (t.includes('TICKET') || t.includes('TASK') || t.includes('COMMENT')) {
             if (role === 'ADMIN') target = '/admin/tickets';
             else if (role === 'TECHNICIAN') target = '/technician/tickets';
             else target = '/tickets';
         }
-        // Bookings Mapping
+        // Routing for Booking requests and status changes
         else if (t.includes('BOOKING') || t === 'STATUS_CHANGE') {
             if (role === 'ADMIN') target = '/admin?tab=bookings';
             else {
-                // Determine if it's an asset or facility booking based on message content
                 const msg = n.message.toLowerCase();
                 if (msg.includes('asset') || msg.includes('equipment')) {
                     target = '/book-asset';
@@ -97,12 +115,12 @@ const NotificationBell: React.FC = () => {
                 }
             }
         }
-        // Assets Catalogue Mapping
+        // Routing for Asset Catalogue updates
         else if (t.includes('ASSET')) {
             if (role === 'ADMIN') target = '/admin?tab=assets';
             else target = '/facilities';
         } 
-        // Role Updates
+        // Security/Role update alerts
         else if (t === 'ROLE_UPDATE') {
             target = role === 'ADMIN' ? '/admin' : '/dashboard';
         }
@@ -110,36 +128,38 @@ const NotificationBell: React.FC = () => {
             return null;
         }
 
+        // Append the resource query parameter for deep-linking
         if (rid) {
             target += (target.includes('?') ? '&' : '?') + `id=${rid}`;
         }
         return target;
     };
 
+    /**
+     * Handles the "View Resource" action by navigating the user and closing the modal.
+     */
     const handleActionClick = (n: Notification) => {
         const route = getNotificationRoute(n);
-        console.log(`[NotificationBell] Action button clicked. Target Route: ${route}`);
-        
         if (route) {
             setSelectedNotification(null);
             setIsOpen(false);
             
-            // Allow state to settle before navigation
+            // Short delay to ensure state transitions complete before navigation
             setTimeout(() => {
                 navigate(route);
             }, 10);
-        } else {
-            console.warn(`[NotificationBell] No route found for notification type: ${n.type}`);
         }
     };
 
     return (
         <div className="notification-wrapper" ref={panelRef}>
+            {/* The primary bell icon with unread badge */}
             <button className="icon-button" onClick={() => setIsOpen(!isOpen)} title="Notifications">
                 <Bell size={22} strokeWidth={2} />
                 {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
             </button>
             
+            {/* The Drop-down Panel */}
             {isOpen && (
                 <div className="notification-panel">
                     <div className="panel-header">
@@ -192,6 +212,7 @@ const NotificationBell: React.FC = () => {
                 </div>
             )}
 
+            {/* The Detail Modal (rendered via Portal to escape stacking context) */}
             {selectedNotification && document.body && createPortal(
                 <div className="modal-overlay" onClick={() => setSelectedNotification(null)}>
                     <div className="detail-modal" onClick={(e) => e.stopPropagation()}>
@@ -218,6 +239,7 @@ const NotificationBell: React.FC = () => {
                                 </div>
                             </div>
                             
+                            {/* Conditional "View Details" button based on whether a route exists for this notification */}
                             {getNotificationRoute(selectedNotification) && (
                                 <button 
                                     className="action-link-btn"
@@ -235,5 +257,8 @@ const NotificationBell: React.FC = () => {
         </div>
     );
 };
+
+export default NotificationBell;
+
 
 export default NotificationBell;
