@@ -250,7 +250,7 @@ const Tickets = () => {
                     </div>
                   )}
 
-                  <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                  <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} collapsible />
 
                   <div className="card-footer">
                     <div></div>

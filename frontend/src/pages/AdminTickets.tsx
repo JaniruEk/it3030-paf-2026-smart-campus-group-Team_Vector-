@@ -27,6 +27,14 @@ type TicketDisplayStatus = TicketStatusOption | 'REJECTED';
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
 type TicketPriority = typeof PRIORITY_OPTIONS[number];
 
+const STATUS_SORT_ORDER: Record<TicketDisplayStatus, number> = {
+  OPEN: 0,
+  IN_PROGRESS: 1,
+  RESOLVED: 2,
+  CLOSED: 3,
+  REJECTED: 4,
+};
+
 const getErrorMessage = (error: unknown) => {
   if (typeof error === 'object' && error !== null) {
     const maybeError = error as { response?: { data?: { message?: string } }; message?: string };
@@ -58,6 +66,7 @@ const AdminTickets = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<TicketDisplayStatus | 'ALL'>('ALL');
+  const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'ALL'>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Prompt Modal State
@@ -76,15 +85,27 @@ const AdminTickets = () => {
   }, [tickets]);
 
   const filteredTickets = useMemo(() => {
-    return tickets.filter((t) => {
+    const filtered = tickets.filter((t) => {
       const matchesStatus = statusFilter === 'ALL' || normalizeStatus(t.status) === statusFilter;
+      const matchesPriority = priorityFilter === 'ALL' || normalizePriority(t.priority) === priorityFilter;
       
       const searchStr = `${t.description} ${t.category} ${t.location} ${t.resourceName || ''} ${t.userId}`.toLowerCase();
       const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
       
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesPriority && matchesSearch;
     });
-  }, [tickets, statusFilter, searchTerm]);
+
+    return [...filtered].sort((a, b) => {
+      const statusDiff = STATUS_SORT_ORDER[normalizeStatus(a.status)] - STATUS_SORT_ORDER[normalizeStatus(b.status)];
+      if (statusDiff !== 0) return statusDiff;
+
+      const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+      const safeATime = Number.isNaN(aTime) ? 0 : aTime;
+      const safeBTime = Number.isNaN(bTime) ? 0 : bTime;
+      return safeBTime - safeATime;
+    });
+  }, [tickets, statusFilter, priorityFilter, searchTerm]);
 
   const loadData = async () => {
     try {
@@ -241,6 +262,19 @@ const AdminTickets = () => {
           </div>
 
           <div className="search-and-priority">
+            <div className="priority-filter-box">
+              <select
+                className="priority-filter-select"
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value as TicketPriority | 'ALL')}
+              >
+                <option value="ALL">All Priorities</option>
+                <option value="URGENT">Urgent</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+            </div>
             <div className="tech-search-box">
               <input 
                 type="text" 
@@ -346,7 +380,7 @@ const AdminTickets = () => {
                       </div>
                     )}
 
-                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+                    <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} collapsible />
 
                     {isOpen && (
                       <div className="admin-ticket-actions">

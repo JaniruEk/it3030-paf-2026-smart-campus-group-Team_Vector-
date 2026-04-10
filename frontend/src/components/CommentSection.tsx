@@ -8,6 +8,7 @@ import './CommentSection.css';
 interface CommentSectionProps {
   ticket: MaintenanceTicket;
   onUpdate: (updatedTicket: MaintenanceTicket) => void;
+  collapsible?: boolean;
 }
 
 const formatDate = (value?: string) => {
@@ -15,12 +16,15 @@ const formatDate = (value?: string) => {
   return new Date(value).toLocaleString();
 };
 
-const CommentSection = ({ ticket, onUpdate }: CommentSectionProps) => {
+const CommentSection = ({ ticket, onUpdate, collapsible = false }: CommentSectionProps) => {
   const { currentUser, userRole } = useAuth();
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [isExpanded, setIsExpanded] = useState(!collapsible);
+
+  const totalComments = ticket.ticketMessages?.length || 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,67 +83,83 @@ const CommentSection = ({ ticket, onUpdate }: CommentSectionProps) => {
 
   return (
     <div className="comment-section">
-      <h4>Comments ({ticket.ticketMessages?.length || 0})</h4>
-      
-      <div className="comment-list">
-        {ticket.ticketMessages?.map((msg, index) => {
-          const isOwner = currentUser?.uid === msg.senderId;
-          const isEditing = editingIndex === index;
+      {collapsible ? (
+        <button
+          type="button"
+          className="comments-toggle-btn"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          aria-expanded={isExpanded}
+        >
+          <span>Comments ({totalComments})</span>
+          <span>{isExpanded ? 'Hide' : 'Show'}</span>
+        </button>
+      ) : (
+        <h4>Comments ({totalComments})</h4>
+      )}
 
-          return (
-            <div key={`${msg.createdAt}-${index}`} className={`comment-item ${isOwner ? 'own-comment' : ''}`}>
-              <div className="comment-header">
-                <span className="comment-author">{msg.senderEmail || 'Unknown'}</span>
-                <span className="comment-role-tag">{msg.senderRole}</span>
-                <span className="comment-date">{formatDate(msg.createdAt)}</span>
-              </div>
-              
-              <div className="comment-body">
-                {isEditing ? (
-                  <div className="edit-comment-form">
-                    <textarea 
-                      value={editingText} 
-                      onChange={(e) => setEditingText(e.target.value)}
-                    />
-                    <div className="edit-actions">
-                      <button onClick={() => handleUpdate(index)} disabled={isSubmitting}>Save</button>
-                      <button onClick={() => setEditingIndex(null)}>Cancel</button>
+      {isExpanded && (
+        <>
+          <div className="comment-list">
+            {ticket.ticketMessages?.map((msg, index) => {
+              const isOwner = currentUser?.uid === msg.senderId;
+              const isEditing = editingIndex === index;
+
+              return (
+                <div key={`${msg.createdAt}-${index}`} className={`comment-item ${isOwner ? 'own-comment' : ''}`}>
+                  <div className="comment-header">
+                    <span className="comment-author">{msg.senderEmail || 'Unknown'}</span>
+                    <span className="comment-role-tag">{msg.senderRole}</span>
+                    <span className="comment-date">{formatDate(msg.createdAt)}</span>
+                  </div>
+
+                  <div className="comment-body">
+                    {isEditing ? (
+                      <div className="edit-comment-form">
+                        <textarea
+                          value={editingText}
+                          onChange={(e) => setEditingText(e.target.value)}
+                        />
+                        <div className="edit-actions">
+                          <button onClick={() => handleUpdate(index)} disabled={isSubmitting}>Save</button>
+                          <button onClick={() => setEditingIndex(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p>{msg.message}</p>
+                    )}
+
+                    {msg.imageDataUrl && (
+                      <div className="comment-attachment">
+                        <img src={msg.imageDataUrl} alt="Attachment" />
+                      </div>
+                    )}
+                  </div>
+
+                  {!isEditing && (isOwner || userRole === 'ADMIN') && (
+                    <div className="comment-actions">
+                      {isOwner && <button onClick={() => handleEdit(index, msg.message || '')}>Edit</button>}
+                      <button onClick={() => handleDelete(index)} className="delete-btn">Delete</button>
                     </div>
-                  </div>
-                ) : (
-                  <p>{msg.message}</p>
-                )}
-                
-                {msg.imageDataUrl && (
-                  <div className="comment-attachment">
-                    <img src={msg.imageDataUrl} alt="Attachment" />
-                  </div>
-                )}
-              </div>
-
-              {!isEditing && (isOwner || userRole === 'ADMIN') && (
-                <div className="comment-actions">
-                  {isOwner && <button onClick={() => handleEdit(index, msg.message || '')}>Edit</button>}
-                  <button onClick={() => handleDelete(index)} className="delete-btn">Delete</button>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
 
-      {ticket.status !== 'CLOSED' && ticket.status !== 'REJECTED' && (
-        <form onSubmit={handleSubmit} className="comment-form">
-          <textarea
-            placeholder="Add a comment or update..."
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            disabled={isSubmitting}
-          />
-          <button type="submit" disabled={isSubmitting || !comment.trim()}>
-            {isSubmitting ? 'Posting...' : 'Post Comment'}
-          </button>
-        </form>
+          {ticket.status !== 'CLOSED' && ticket.status !== 'REJECTED' && (
+            <form onSubmit={handleSubmit} className="comment-form">
+              <textarea
+                placeholder="Add a comment or update..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                disabled={isSubmitting}
+              />
+              <button type="submit" disabled={isSubmitting || !comment.trim()}>
+                {isSubmitting ? 'Posting...' : 'Post Comment'}
+              </button>
+            </form>
+          )}
+        </>
       )}
     </div>
   );

@@ -4,6 +4,25 @@
   border-top: 1px solid #eee;
 }
 
+.comments-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #dbe3ee;
+  background: #f8fafc;
+  color: #1e293b;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.comments-toggle-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
 .comment-list {
   display: flex;
   flex-direction: column;

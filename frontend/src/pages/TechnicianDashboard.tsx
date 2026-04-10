@@ -131,7 +131,7 @@ const TechnicianDashboard = () => {
                 )}
               </div>
 
-              <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} />
+              <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} collapsible />
             </article>
           ))}
         </div>

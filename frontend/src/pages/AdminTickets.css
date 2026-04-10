@@ -281,11 +281,11 @@
 /* Ticket Filter Bar Styles */
 .ticket-filters-bar {
   display: flex !important;
-  flex-direction: row !important;
+  flex-direction: column !important;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 1rem;
   padding: 1.5rem 2rem;
   background: white;
   border-bottom: 2px solid #f1f5f9;
@@ -296,14 +296,37 @@
   gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
+  width: 100%;
 }
 
 .search-and-priority {
   display: flex;
   gap: 1rem;
   align-items: center;
-  flex: 1;
-  max-width: 500px;
+  width: 100%;
+  max-width: 700px;
+}
+
+.priority-filter-box {
+  min-width: 190px;
+}
+
+.priority-filter-select {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  outline: none;
+}
+
+.priority-filter-select:focus {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .tech-search-box {
@@ -383,5 +406,20 @@
     flex-direction: column;
     align-items: stretch;
     padding: 1.5rem;
+  }
+
+  .search-and-priority {
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .search-and-priority {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .priority-filter-box {
+    min-width: 0;
   }
 }

@@ -18,6 +18,7 @@ interface CreateTicketModalProps {
 const CATEGORY_OPTIONS = ['ELECTRICAL', 'PLUMBING', 'CLEANING', 'IT_SUPPORT', 'FURNITURE', 'SECURITY', 'OTHER'];
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const MAX_ATTACHMENTS = 3;
+const INVENTORY_ASSET_TYPES = ['Projector', 'Camera', 'Laptop', 'Sound System', 'Router'];
 
 const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreated, editingTicket }) => {
   const { currentUser } = useAuth();
@@ -43,8 +44,12 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     const loadResources = async () => {
       try {
         const data = await getResources();
-        // Only show active resources for incident reporting
-        setResources(data.filter((r: Resource) => r.status === 'ACTIVE'));
+        // Only show active inventory assets for incident reporting.
+        setResources(
+          data.filter(
+            (r: Resource) => r.status === 'ACTIVE' && INVENTORY_ASSET_TYPES.includes(r.type),
+          ),
+        );
       } catch (error) {
         toast.error('Failed to load campus resources');
       }
@@ -184,7 +189,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                         value={formData.resourceId}
                         onChange={handleResourceChange}
                     >
-                        <option value="">Select Resource</option>
+                      <option value="">Select Inventory Asset</option>
                         {resources.map(r => <option key={r.id} value={r.id}>{r.name} ({r.type})</option>)}
                     </select>
                  </section>
