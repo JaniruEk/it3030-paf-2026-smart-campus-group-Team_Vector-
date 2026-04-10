@@ -18,13 +18,13 @@ public class FirebaseConfig {
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
         ClassPathResource serviceAccount = new ClassPathResource("firebase-service-account.json");
-        
+
         if (!serviceAccount.exists()) {
             throw new RuntimeException("\n\n❌ ================================================= \n" +
-                                       "❌ ERROR: Missing 'firebase-service-account.json'!\n" +
-                                       "❌ Please download your Firebase Admin SDK service \n" +
-                                       "❌ account key and place it in src/main/resources.\n" +
-                                       "❌ ================================================= \n");
+                    "❌ ERROR: Missing 'firebase-service-account.json'!\n" +
+                    "❌ Please download your Firebase Admin SDK service \n" +
+                    "❌ account key and place it in src/main/resources.\n" +
+                    "❌ ================================================= \n");
         }
 
         FirebaseOptions options = FirebaseOptions.builder()
@@ -34,7 +34,7 @@ public class FirebaseConfig {
         if (!FirebaseApp.getApps().isEmpty()) {
             FirebaseApp.getInstance().delete();
         }
-        
+
         FirebaseApp app = FirebaseApp.initializeApp(options);
         System.out.println("✅ Firebase initialized successfully!");
         return app;
