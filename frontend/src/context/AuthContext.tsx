@@ -3,6 +3,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndP
 import type { User } from 'firebase/auth';
 import { auth, loginWithGoogle, logout, db } from '../config/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import SplashScreen from '../components/SplashScreen';
 
 /**
  * Context for managing Global Authentication state.
@@ -162,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children} // Render children only after the initial auth state is resolved
+      {loading ? <SplashScreen /> : children}
     </AuthContext.Provider>
   );
 };
