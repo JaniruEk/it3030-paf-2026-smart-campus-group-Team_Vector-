@@ -20,6 +20,14 @@ const formatDate = (value?: string): string => {
   return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
 };
 
+const getPreferredIdentity = (name?: string | null, email?: string | null) => {
+  const safeName = name?.trim();
+  if (safeName) return safeName;
+  const safeEmail = email?.trim();
+  if (safeEmail) return safeEmail;
+  return 'System Assignment Pending';
+};
+
 const Tickets = () => {
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -192,7 +200,16 @@ const Tickets = () => {
             </div>
           ) : (
             <div className="modern-card-grid">
-              {filteredTickets.map((ticket) => (
+              {filteredTickets.map((ticket) => {
+                const canEditTicket = ticket.status === 'OPEN';
+                const canDeleteTicket = ['OPEN', 'CLOSED', 'REJECTED'].includes(ticket.status);
+                const assignedSupport = getPreferredIdentity(
+                  ticket.assignedTechnicianName,
+                  ticket.assignedTechnicianEmail,
+                );
+                const supportAvatarSeed = assignedSupport === 'System Assignment Pending' ? '?' : assignedSupport;
+
+                return (
                 <article key={ticket.id} id={`ticket-${ticket.id}`} className="modern-ticket-card smooth-transition">
                   <div className="card-top">
                     <div className="category-tag">
@@ -220,8 +237,8 @@ const Tickets = () => {
                     <div className="tech-info">
                       <label>Assigned Support</label>
                       <div className="tech-profile">
-                        <div className="tech-avatar-mini">{ticket.assignedTechnicianEmail ? ticket.assignedTechnicianEmail.charAt(0).toUpperCase() : '?'}</div>
-                        <span>{ticket.assignedTechnicianEmail || 'System Assignment Pending'}</span>
+                        <div className="tech-avatar-mini">{supportAvatarSeed.charAt(0).toUpperCase()}</div>
+                        <span>{assignedSupport}</span>
                       </div>
                     </div>
 
@@ -250,35 +267,46 @@ const Tickets = () => {
                     </div>
                   )}
 
+                  {ticket.status === 'REJECTED' && (
+                    <div className="rejection-feedback">
+                      <label>Rejection Message</label>
+                      <p>{ticket.rejectionReason || 'No rejection message was provided by admin.'}</p>
+                    </div>
+                  )}
+
                   <CommentSection ticket={ticket} onUpdate={handleTicketUpdate} collapsible />
 
                   <div className="card-footer">
                     <div></div>
-                    {ticket.status === 'OPEN' && (
+                    {(canEditTicket || canDeleteTicket) && (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button 
-                                className="edit-icon-btn"
-                                onClick={() => {
-                                    setEditingTicket(ticket);
-                                    setIsModalOpen(true);
-                                }}
-                                title="Edit Ticket"
-                            >
-                                <Edit2 size={16} />
-                            </button>
-                            <button 
-                                className="edit-icon-btn"
-                                onClick={() => handleDeleteTicket(ticket.id!)}
-                                title="Delete Ticket"
-                                style={{ color: '#ef4444' }}
-                            >
-                                <Trash2 size={16} />
-                            </button>
+                            {canEditTicket && (
+                              <button 
+                                  className="edit-icon-btn"
+                                  onClick={() => {
+                                      setEditingTicket(ticket);
+                                      setIsModalOpen(true);
+                                  }}
+                                  title="Edit Ticket"
+                              >
+                                  <Edit2 size={16} />
+                              </button>
+                            )}
+                            {canDeleteTicket && (
+                              <button 
+                                  className="edit-icon-btn delete-icon-btn"
+                                  onClick={() => handleDeleteTicket(ticket.id!)}
+                                  title="Delete Ticket"
+                              >
+                                  <Trash2 size={16} />
+                              </button>
+                            )}
                         </div>
                     )}
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

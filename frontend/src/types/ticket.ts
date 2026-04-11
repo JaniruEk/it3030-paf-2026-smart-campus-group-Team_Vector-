@@ -1,4 +1,5 @@
 export interface Resource {
+  location: string;
   id: string;
   name: string;
   type: string;
@@ -26,6 +27,8 @@ export interface TicketMessage {
 export interface MaintenanceTicket {
   id: string;
   userId: string;
+  userDisplayName?: string;
+  userEmail?: string;
   resourceId?: string;
   resourceName?: string;
   location: string;
@@ -34,6 +37,7 @@ export interface MaintenanceTicket {
   priority: string;
   status: string;
   assignedTechnicianId?: string;
+  assignedTechnicianName?: string;
   assignedTechnicianEmail?: string;
   assignedAt?: string;
   rejectionReason?: string;

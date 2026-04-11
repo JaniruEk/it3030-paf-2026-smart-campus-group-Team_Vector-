@@ -150,9 +150,52 @@ const AdminTickets = () => {
     }
   }, [searchParams, isLoading, tickets]);
 
-  const getRequestedByEmail = (userId: string) => {
-    const user = users.find((item) => item.uid === userId);
-    return user ? user.email : userId;
+  const getUserLabel = (user?: UserData) => {
+    const displayName = user?.displayName?.trim();
+    if (displayName) return displayName;
+    const email = user?.email?.trim();
+    return email || 'Unknown User';
+  };
+
+  const getRequesterLabel = (ticket: MaintenanceTicket) => {
+    const requestedUser = users.find((item) => item.uid === ticket.userId);
+    if (requestedUser) {
+      return getUserLabel(requestedUser);
+    }
+
+    const fallbackName = ticket.userDisplayName?.trim();
+    if (fallbackName) return fallbackName;
+
+    const fallbackEmail = ticket.userEmail?.trim();
+    if (fallbackEmail) return fallbackEmail;
+
+    return ticket.userId;
+  };
+
+  const getAssignedStaffLabel = (ticket: MaintenanceTicket) => {
+    const assignedById = ticket.assignedTechnicianId
+      ? users.find((item) => item.uid === ticket.assignedTechnicianId)
+      : undefined;
+
+    if (assignedById) {
+      return getUserLabel(assignedById);
+    }
+
+    const assignedByEmail = ticket.assignedTechnicianEmail
+      ? users.find((item) => item.email === ticket.assignedTechnicianEmail)
+      : undefined;
+
+    if (assignedByEmail) {
+      return getUserLabel(assignedByEmail);
+    }
+
+    const fallbackName = ticket.assignedTechnicianName?.trim();
+    if (fallbackName) return fallbackName;
+
+    const fallbackEmail = ticket.assignedTechnicianEmail?.trim();
+    if (fallbackEmail) return fallbackEmail;
+
+    return 'Awaiting Assignment';
   };
 
   const handleAssignTechnician = async (ticket: MaintenanceTicket, event: FormEvent) => {
@@ -333,7 +376,7 @@ const AdminTickets = () => {
                         <div className="info-row">
                           <div className="info-item">
                             <label>Requester</label>
-                            <span>{getRequestedByEmail(ticket.userId)}</span>
+                            <span>{getRequesterLabel(ticket)}</span>
                           </div>
                           <div className="info-item">
                             <label>Location</label>
@@ -347,7 +390,7 @@ const AdminTickets = () => {
                         <div className="info-item full">
                           <label>Assigned Staff</label>
                           <span style={{ color: ticket.assignedTechnicianEmail ? '#0f172a' : '#94a3b8', fontWeight: 600 }}>
-                            {ticket.assignedTechnicianEmail || 'Awaiting Assignment'}
+                            {getAssignedStaffLabel(ticket)}
                           </span>
                         </div>
                       </div>
@@ -390,7 +433,7 @@ const AdminTickets = () => {
                             onChange={(e) => setSelectedTechByTicket(prev => ({ ...prev, [ticketId]: e.target.value }))}
                           >
                             <option value="">Select Technician</option>
-                            {technicians.map(t => <option key={t.uid} value={t.uid}>{t.email}</option>)}
+                            {technicians.map(t => <option key={t.uid} value={t.uid}>{getUserLabel(t)}</option>)}
                           </select>
                           <button type="submit" disabled={!selectedTechByTicket[ticketId] || actionTicketId === ticketId}>
                             Assign Staff

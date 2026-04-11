@@ -19,12 +19,22 @@ const CATEGORY_OPTIONS = ['ELECTRICAL', 'PLUMBING', 'CLEANING', 'IT_SUPPORT', 'F
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const MAX_ATTACHMENTS = 3;
 const INVENTORY_ASSET_TYPES = ['Projector', 'Camera', 'Laptop', 'Sound System', 'Router'];
+type ContactMethod = 'EMAIL' | 'PHONE_NUMBER';
+
+const normalizeContactMethod = (method?: string): ContactMethod => {
+  const normalized = method?.trim().toUpperCase();
+  if (normalized === 'PHONE' || normalized === 'PHONE_NUMBER') {
+    return 'PHONE_NUMBER';
+  }
+  return 'EMAIL';
+};
 
 const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreated, editingTicket }) => {
   const { currentUser } = useAuth();
+  const defaultContactMethod = normalizeContactMethod(editingTicket?.preferredContactMethod);
   const [resources, setResources] = useState<Resource[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mode, setMode] = useState<'RESOURCE' | 'LOCATION'>(editingTicket?.location ? 'LOCATION' : 'RESOURCE');
+  const [mode, setMode] = useState<'RESOURCE' | 'LOCATION'>(editingTicket?.resourceId ? 'RESOURCE' : 'LOCATION');
 
   const [formData, setFormData] = useState<CreateTicketPayload>({
     resourceId: editingTicket?.resourceId || '',
@@ -33,8 +43,9 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     category: editingTicket?.category || 'ELECTRICAL',
     description: editingTicket?.description || '',
     priority: editingTicket?.priority || 'MEDIUM',
-    preferredContactDetails: editingTicket?.preferredContactDetails || currentUser?.email || '',
-    preferredContactMethod: editingTicket?.preferredContactMethod || 'EMAIL',
+    preferredContactDetails:
+      editingTicket?.preferredContactDetails || (defaultContactMethod === 'EMAIL' ? currentUser?.email || '' : ''),
+    preferredContactMethod: defaultContactMethod,
     attachments: editingTicket?.attachments || [],
   });
 
@@ -57,19 +68,46 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     loadResources();
   }, []);
 
+  useEffect(() => {
+    if (
+      !editingTicket
+      && formData.preferredContactMethod === 'EMAIL'
+      && !formData.preferredContactDetails
+      && currentUser?.email
+    ) {
+      setFormData(prev => ({ ...prev, preferredContactDetails: currentUser.email || '' }));
+    }
+  }, [editingTicket, formData.preferredContactMethod, formData.preferredContactDetails, currentUser?.email]);
+
   const handleResourceChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const resId = e.target.value;
     const res = resources.find(r => r.id === resId);
     if (res) {
-        setFormData(prev => ({ 
-            ...prev, 
-            resourceId: res.id, 
-            resourceName: res.name,
-            location: res.location || prev.location 
-        }));
+      setFormData(prev => ({
+        ...prev,
+        resourceId: res.id,
+        resourceName: res.name,
+      }));
     } else {
-        setFormData(prev => ({ ...prev, resourceId: '', resourceName: '' }));
+      setFormData(prev => ({ ...prev, resourceId: '', resourceName: '' }));
     }
+  };
+
+  const handleModeChange = (nextMode: 'RESOURCE' | 'LOCATION') => {
+    setMode(nextMode);
+    if (nextMode === 'RESOURCE') {
+      setFormData(prev => ({
+        ...prev,
+        location: '',
+      }));
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      resourceId: '',
+      resourceName: '',
+    }));
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -112,13 +150,25 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     }));
   };
 
+  const handleContactMethodChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const selectedMethod = e.target.value as ContactMethod;
+    setFormData(prev => ({
+      ...prev,
+      preferredContactMethod: selectedMethod,
+      preferredContactDetails: selectedMethod === 'EMAIL' ? currentUser?.email || '' : '',
+    }));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const trimmedLocation = formData.location.trim();
+    const locationFromAsset = formData.resourceName?.trim() || '';
+
     if (mode === 'RESOURCE' && !formData.resourceId) {
       toast.error('Please select a resource');
       return;
     }
-    if (mode === 'LOCATION' && !formData.location) {
+    if (mode === 'LOCATION' && !trimmedLocation) {
       toast.error('Please specify a location');
       return;
     }
@@ -126,15 +176,36 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
       toast.error('Please describe the issue');
       return;
     }
+    if (!formData.preferredContactDetails.trim()) {
+      toast.error(
+        formData.preferredContactMethod === 'PHONE_NUMBER'
+          ? 'Please enter your phone number'
+          : 'Please provide your email address',
+      );
+      return;
+    }
+
+    const resolvedLocation = mode === 'RESOURCE' ? (trimmedLocation || locationFromAsset) : trimmedLocation;
+    if (!resolvedLocation) {
+      toast.error('Selected asset is missing location context. Please switch to General Location and provide it.');
+      return;
+    }
+
+    const payload: CreateTicketPayload = {
+      ...formData,
+      resourceId: mode === 'RESOURCE' ? formData.resourceId : undefined,
+      resourceName: mode === 'RESOURCE' ? formData.resourceName : undefined,
+      location: resolvedLocation,
+    };
 
     try {
       setIsSubmitting(true);
       let ticket;
       if (editingTicket) {
-        ticket = await updateMyTicket(editingTicket.id, formData);
+        ticket = await updateMyTicket(editingTicket.id, payload);
         toast.success('Incident report updated successfully');
       } else {
-        ticket = await createTicket(formData);
+        ticket = await createTicket(payload);
         toast.success('Incident reported successfully');
       }
       onCreated(ticket);
@@ -167,14 +238,14 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
             <button 
                 type="button"
                 className={`tab-btn ${mode === 'RESOURCE' ? 'active' : ''}`}
-                onClick={() => setMode('RESOURCE')}
+              onClick={() => handleModeChange('RESOURCE')}
             >
                 <Box size={18} /> Specific Asset
             </button>
             <button 
                 type="button"
                 className={`tab-btn ${mode === 'LOCATION' ? 'active' : ''}`}
-                onClick={() => setMode('LOCATION')}
+              onClick={() => handleModeChange('LOCATION')}
             >
                 <MapPin size={18} /> General Location
             </button>
@@ -228,6 +299,35 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                 style={{ minHeight: '100px' }}
             />
           </div>
+
+              <div className="form-grid">
+               <section className="form-section">
+                <label className="preview-label">Preferred Contact Type</label>
+                <select
+                  className="form-select"
+                  value={formData.preferredContactMethod || 'EMAIL'}
+                  onChange={handleContactMethodChange}
+                >
+                  <option value="EMAIL">Email</option>
+                  <option value="PHONE_NUMBER">Phone Number</option>
+                </select>
+               </section>
+
+               <section className="form-section">
+                <label className="preview-label">Contact Details</label>
+                <input
+                  type={formData.preferredContactMethod === 'PHONE_NUMBER' ? 'tel' : 'email'}
+                  className="form-input"
+                  placeholder={
+                    formData.preferredContactMethod === 'PHONE_NUMBER'
+                    ? 'Enter your phone number'
+                    : 'Enter your email address'
+                  }
+                  value={formData.preferredContactDetails}
+                  onChange={(e) => setFormData(prev => ({ ...prev, preferredContactDetails: e.target.value }))}
+                />
+               </section>
+              </div>
 
           <div className="form-grid">
              <section className="form-section">

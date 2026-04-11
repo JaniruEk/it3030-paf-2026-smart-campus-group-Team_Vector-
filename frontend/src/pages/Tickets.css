@@ -111,6 +111,8 @@
 .status-open { background: #e0e7ff; color: #4338ca; }
 .status-in_progress { background: #fef3c7; color: #92400e; }
 .status-resolved { background: #dcfce7; color: #166534; }
+.status-closed { background: #e2e8f0; color: #334155; }
+.status-rejected { background: #fee2e2; color: #991b1b; }
 .priority-high { background: #fee2e2; color: #b91c1c; }
 .priority-medium { background: #ffedd5; color: #9a3412; }
 .priority-low { background: #f1f5f9; color: #475569; }
@@ -156,6 +158,30 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.5rem;
+}
+
+.rejection-feedback {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+.rejection-feedback label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #9f1239;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.rejection-feedback p {
+  margin: 0;
+  color: #881337;
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .tech-profile {
@@ -241,6 +267,18 @@
   background: var(--campus-primary);
   color: white;
   border-color: var(--campus-primary);
+}
+
+.delete-icon-btn {
+  color: #ef4444;
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.delete-icon-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
 }
 
 .empty-portal-state {
