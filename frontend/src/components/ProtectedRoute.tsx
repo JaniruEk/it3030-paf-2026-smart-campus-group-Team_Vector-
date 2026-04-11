@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Outlet, Navigate } from 'react-router-dom';
+import SplashScreen from './SplashScreen';
 
 const ProtectedRoute = () => {
     const { currentUser, loading, logout, sendVerificationEmail } = useAuth();
     const [message, setMessage] = useState('');
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <SplashScreen />;
 
     if (!currentUser) {
         return <Navigate to="/login" replace />;
