@@ -3,6 +3,7 @@ export interface Resource {
   name: string;
   type: string;
   status: string;
+  location?: string;
 }
 
 export interface TicketAttachment {
