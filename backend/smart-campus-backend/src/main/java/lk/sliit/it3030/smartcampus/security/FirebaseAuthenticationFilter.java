@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Security & Authentication Modules.
+ * Usage: This filter is the entry point for system security. It intercepts every HTTP request to 
+ * validate the Firebase JWT (OAuth 2.0). It then extracts custom claims to populate the Spring 
+ * Security context with user-specific roles (RBAC).
+ */
 package lk.sliit.it3030.smartcampus.security;
 
 import com.google.firebase.auth.FirebaseAuth;

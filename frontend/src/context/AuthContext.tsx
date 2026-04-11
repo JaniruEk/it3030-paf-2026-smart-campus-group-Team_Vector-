@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Global Identity & Session Management.
+ * Usage: This context provides a centralized authentication state for the React app. 
+ * It handles Firebase session monitoring, role extraction from Custom Claims, 
+ * and profile synchronization with Firestore.
+ */
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updatePassword, sendPasswordResetEmail, sendEmailVerification, updateProfile } from 'firebase/auth';
 import type { User } from 'firebase/auth';

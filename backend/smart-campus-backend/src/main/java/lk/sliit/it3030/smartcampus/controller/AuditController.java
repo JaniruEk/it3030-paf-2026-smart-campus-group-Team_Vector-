@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Administrative Accountability & Auditing.
+ * Usage: This controller provides the data source for the system's Audit Logs. 
+ * It allows administrators to review critical actions (Role changes, broadcasts, suspensions) 
+ * to ensure security compliance and forensic traceability.
+ */
 package lk.sliit.it3030.smartcampus.controller;
 
 import lk.sliit.it3030.smartcampus.model.AuditLog;

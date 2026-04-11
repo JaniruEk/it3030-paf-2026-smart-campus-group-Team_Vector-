@@ -1,3 +1,8 @@
+/**
+ * Contribution of Member 4: UX & Loading State Management.
+ * Usage: This component handles the "White Screen" issue by providing a branded 
+ * splash screen while the Firebase auth state and Custom Claims are being resolved.
+ */
 import React from 'react';
 import './SplashScreen.css';
 

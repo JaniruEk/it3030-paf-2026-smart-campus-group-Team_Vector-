@@ -1,3 +1,10 @@
+/**
+ * Contribution of Member 4: Identity & RBAC Management.
+ * Usage: This controller facilitates administrative user management. It provides 
+ * endpoints to list all registered users, toggle account suspension status, 
+ * and perform Custom Claim injection for role-based access control assignments.
+ */
+
 package lk.sliit.it3030.smartcampus.controller;
 
 import com.google.firebase.auth.ExportedUserRecord;
@@ -33,6 +40,13 @@ public class UserController {
         this.auditLogRepository = auditLogRepository;
     }
 
+    /**
+     * Retrieves all registered users from Firebase Authentication.
+     * This endpoint returns a list of users with their basic profile information 
+     * and assigned roles extracted from Custom Claims.
+     * 
+     * @return A list of map objects containing user details (uid, email, displayName, disabled, role).
+     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
@@ -46,27 +60,38 @@ public class UserController {
                 userData.put("email", user.getEmail());
                 userData.put("displayName", user.getDisplayName());
                 userData.put("disabled", user.isDisabled());
-                
+
                 Map<String, Object> customClaims = user.getCustomClaims();
                 String role = "USER";
                 if (customClaims != null && customClaims.containsKey("role")) {
                     role = (String) customClaims.get("role");
                 }
                 userData.put("role", role);
-                
+
                 response.add(userData);
             }
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (FirebaseAuthException e) {
             return ResponseEntity.internalServerError().build();
         }
     }
 
+    /**
+     * Updates the role of a specific user.
+     * This method injects a Custom Claim into the user's Firebase account, 
+     * triggers a real-time notification to the user, and logs the action for auditing.
+     * 
+     * @param userId  The unique UID of the user to update.
+     * @param request The request body containing the new role.
+     * @param auth    The authentication object of the administrator performing the action.
+     * @return A success message confirming the role update.
+     */
     @PutMapping("/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> updateUserRole(@PathVariable String userId, @Valid @RequestBody UserRoleUpdateRequest request, Authentication auth) {
+    public ResponseEntity<Map<String, String>> updateUserRole(@PathVariable String userId,
+            @Valid @RequestBody UserRoleUpdateRequest request, Authentication auth) {
         try {
             Map<String, Object> claims = new HashMap<>();
             String newRole = request.getRole().toUpperCase();
@@ -76,13 +101,15 @@ public class UserController {
             try {
                 String msg = "A system administrator has updated your account role to " + newRole + ". Welcome!";
                 notificationService.createNotification(userId, msg, "ROLE_UPDATE", null);
-                
+
                 String performedBy = auth.getName();
                 try {
                     String email = FirebaseAuth.getInstance().getUser(performedBy).getEmail();
-                    if (email != null) performedBy = email;
-                } catch (Exception ignored) {}
-                
+                    if (email != null)
+                        performedBy = email;
+                } catch (Exception ignored) {
+                }
+
                 auditLogRepository.save(AuditLog.builder()
                         .action("ROLE_CHANGED_TO_" + newRole)
                         .performedBy(performedBy)
@@ -102,9 +129,20 @@ public class UserController {
         }
     }
 
+    /**
+     * Toggles the account status (Enabled/Disabled) for a user.
+     * Disabling an account prevents the user from logging in via Firebase.
+     * The action is logged in the system audit trail.
+     * 
+     * @param userId  The unique UID of the user to update.
+     * @param request The request body containing the 'disabled' boolean status.
+     * @param auth    The authentication object of the administrator performing the action.
+     * @return A success message confirming the status change.
+     */
     @PutMapping("/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> updateUserStatus(@PathVariable String userId, @RequestBody Map<String, Boolean> request, Authentication auth) {
+    public ResponseEntity<Map<String, String>> updateUserStatus(@PathVariable String userId,
+            @RequestBody Map<String, Boolean> request, Authentication auth) {
         try {
             boolean disabled = request.getOrDefault("disabled", false);
             UserRecord.UpdateRequest updateRequest = new UserRecord.UpdateRequest(userId)
@@ -115,9 +153,11 @@ public class UserController {
                 String performedBy = auth.getName();
                 try {
                     String email = FirebaseAuth.getInstance().getUser(performedBy).getEmail();
-                    if (email != null) performedBy = email;
-                } catch (Exception ignored) {}
-                
+                    if (email != null)
+                        performedBy = email;
+                } catch (Exception ignored) {
+                }
+
                 auditLogRepository.save(AuditLog.builder()
                         .action(disabled ? "ACCOUNT_SUSPENDED" : "ACCOUNT_ACTIVATED")
                         .performedBy(performedBy)
@@ -125,7 +165,7 @@ public class UserController {
                         .timestamp(new java.util.Date())
                         .build());
             } catch (Exception e) {
-                 System.err.println("Failed to save audit log: " + e.getMessage());
+                System.err.println("Failed to save audit log: " + e.getMessage());
             }
 
             Map<String, String> response = new HashMap<>();

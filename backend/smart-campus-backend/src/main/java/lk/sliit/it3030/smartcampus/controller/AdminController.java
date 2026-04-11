@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Administrative Intelligence & System Health.
+ * Usage: This controller provides real-time system telemetry. It calculates 
+ * CPU and Memory usage on the server, fetches active session counts from the 
+ * WebSocket registry, and provides a snapshot of database connectivity.
+ */
 package lk.sliit.it3030.smartcampus.controller;
 
 import com.google.firebase.auth.ExportedUserRecord;

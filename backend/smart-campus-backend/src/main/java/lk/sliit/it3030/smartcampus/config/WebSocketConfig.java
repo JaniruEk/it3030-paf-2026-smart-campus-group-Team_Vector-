@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Real-time Messaging Infrastructure.
+ * Usage: This configuration enables the STOMP message broker. It defines the 
+ * "/ws" connection endpoint and establishes the topic-based routing prefixes 
+ * for targeted and broadcast notifications.
+ */
 package lk.sliit.it3030.smartcampus.config;
 
 import org.springframework.context.annotation.Configuration;

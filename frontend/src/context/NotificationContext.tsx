@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Real-time Messaging Context.
+ * Usage: This module maintains a persistent WebSocket connection (SockJS/STOMP). 
+ * It listens for incoming alerts on user-specific and broadcast topics, 
+ * triggering visual (toast) and audible alerts to ensure reactive UX.
+ */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';

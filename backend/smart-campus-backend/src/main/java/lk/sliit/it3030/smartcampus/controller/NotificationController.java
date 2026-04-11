@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Real-time Notification Gateways.
+ * Usage: This controller provides the RESTful interface for the notification system. 
+ * It manages individual alert fetching, mark-as-read status toggles, and provides 
+ * the administrative "Broadcast" endpoint for system-wide announcements.
+ */
 package lk.sliit.it3030.smartcampus.controller;
 
 import lk.sliit.it3030.smartcampus.model.Notification;

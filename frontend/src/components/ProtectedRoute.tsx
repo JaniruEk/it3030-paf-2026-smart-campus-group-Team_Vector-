@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Global Access Control Middleware.
+ * Usage: This component acts as a security gate for protected areas of the app. 
+ * It ensures that only authenticated users can access internal routes, 
+ * redirecting anonymous users back to the login gateway.
+ */
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Outlet, Navigate } from 'react-router-dom';

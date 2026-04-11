@@ -35,8 +35,12 @@
 //     }
 // }
 
-
-
+/**
+ * Contribution of Member 4: Security & Middleware Configuration.
+ * Usage: This configuration orchestrates the Spring Security Filter Chain. It defines 
+ * permit-all vs secure endpoints, configures CORS for the React frontend, and integrates 
+ * the stateless FirebaseAuthenticationFilter into the middleware pipeline.
+ */
 package lk.sliit.it3030.smartcampus.security;
 
 import org.springframework.beans.factory.annotation.Autowired;

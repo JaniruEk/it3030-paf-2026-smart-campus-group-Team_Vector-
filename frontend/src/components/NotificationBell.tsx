@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Real-time UI Interaction.
+ * Usage: This component provides the primary visual interface for notifications. 
+ * It manages the unread count badge, real-time message previews, and provides 
+ * navigation hooks to relevant resources via the NotificationContext.
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, Check, Trash2, MailOpen, Inbox, X, ExternalLink } from 'lucide-react';

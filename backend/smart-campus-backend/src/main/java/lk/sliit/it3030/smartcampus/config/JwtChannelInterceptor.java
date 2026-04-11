@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Real-time Security & WebSocket Authorization.
+ * Usage: This interceptor secures the WebSocket handshake. It validates the 
+ * JWT during the initial CONNECT frame, ensuring that only authenticated users 
+ * can establish a persistent real-time connection.
+ */
 package lk.sliit.it3030.smartcampus.config;
 
 import com.google.firebase.auth.FirebaseAuth;

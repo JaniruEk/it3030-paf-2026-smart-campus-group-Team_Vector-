@@ -1,3 +1,9 @@
+/**
+ * Contribution of Member 4: Real-time Notification Engine.
+ * Usage: This service orchestrates the delivery of messages. It handles both 
+ * persistent storage in Firestore and instantaneous delivery via STOMP topics. 
+ * It includes background threading for multi-recipient broadcasts to ensure UI performance.
+ */
 package lk.sliit.it3030.smartcampus.service;
 
 import com.google.api.core.ApiFuture;
