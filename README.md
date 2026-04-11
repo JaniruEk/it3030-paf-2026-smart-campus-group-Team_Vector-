@@ -8,7 +8,20 @@ The **Smart Campus Operations Hub** is a centralized, enterprise-grade facility 
 
 ---
 
-## 🚀 Implemented Modules
+## 🚀 Features & Modules
+
+### Core Modules
+*   **Module A: Facilities & Asset Management** (Member 1) - Digital catalogue with capacity-based filtering.
+*   **Module B: Booking Engine** (Member 2) - Advanced scheduling with conflict prevention logic.
+*   **Module C: Maintenance & Incident Tracking** (Member 3) - Multi-stage ticketing with evidence attachments.
+*   **Module D: Real-time Notification Hub** (Member 4) - Role-based STOMP/WebSocket alerts.
+
+## 🛠 Individual Contributions & Reports
+Each member has documented their specific technical implementations and architectural decisions:
+- [Member 1 Contribution Report](Member1_Contribution_Report.md)
+- [Member 2 Contribution Report](Member2_Contribution_Report.md)
+- [Member 3 Contribution Report](Member3_Contribution_Report.md)
+- [Member 4 Contribution Report](Member4_Contribution_Report.md)
 
 ### **Module A: Facilities & Assets Catalogue (Member 1)**
 *   **Centralized Asset Registry:** Full CRUD operations for campus resources (Lecture Halls, Labs, Meeting Rooms, Projectors, etc.).
@@ -30,6 +43,11 @@ The **Smart Campus Operations Hub** is a centralized, enterprise-grade facility 
 *   **STOMP/WebSocket Integration:** Real-time "push" alerts for ticket updates, booking approvals, and new comments.
 *   **Firestore Persistence:** All notifications are stored in a distributed ledger, ensuring no message is lost.
 *   **Interactive UI:** Desktop-style notification bell with read/delete functionality.
+
+### Innovative Enhancements
+*   **Real-time Synchronization (STOMP/SockJS)**: Instant dashboard updates without page refreshes.
+*   **Enhanced Security**: Firebase OAuth 2.0 integration with custom role-based claims.
+*   **Storage-less Image Handling**: High-resolution evidence processing via optimized Base64 compression.
 
 ### **Module E: Authentication & Authorization (Member 4)**
 *   **Google SSO Integration:** Secure single sign-on via Firebase Authentication.
