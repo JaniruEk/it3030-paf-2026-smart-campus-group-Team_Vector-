@@ -207,10 +207,13 @@ function BookingForm({ mode }: BookingFormProps) {
         : await apiClient.post("/booking", bookingData);
       
       const result = response.data;
-      if (response.status === 200 && typeof result === 'string' && result.toLowerCase().includes("successfully")) {
+      if (response.status === 200) {
+        // If status is 200, we treat it as success regardless of the exact string, 
+        // though we prefer the 'successfully' message from our standardized backend.
         setError("");
         
-        toast.success(result.includes("updated") ? "Booking updated successfully" : "Request submitted successfully");
+        const isUpdate = editingBooking || (typeof result === 'string' && result.toLowerCase().includes("updated"));
+        toast.success(isUpdate ? "Booking updated successfully" : "Request submitted successfully");
         
         // Redirect to registry after success
         setTimeout(() => {

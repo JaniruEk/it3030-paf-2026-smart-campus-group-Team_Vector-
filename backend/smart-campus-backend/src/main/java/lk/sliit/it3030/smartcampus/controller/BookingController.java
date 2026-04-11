@@ -125,7 +125,7 @@ public class BookingController {
             if (booking == null) return "Booking not found";
 
             // 2. Update status
-            String result = bookingRepository.updateStatus(id, status, adminReason);
+            bookingRepository.updateStatus(id, status, adminReason);
 
             // 3. Send Notification
             String message = String.format("Your booking for %s on %s has been %s.", 
@@ -152,7 +152,7 @@ public class BookingController {
                 messagingTemplate.convertAndSend("/topic/bookings/user/updates/" + booking.getRequesterUid(), "STATUS_CHANGE");
             }
 
-            return result;
+            return "Status updated successfully";
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
             return "Error updating status and sending notification";
@@ -166,7 +166,8 @@ public class BookingController {
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
             if (isAdmin) {
-                return bookingRepository.delete(id);
+                bookingRepository.delete(id);
+                return "Booking deleted successfully";
             } else {
                 // Soft delete for users
                 Booking booking = bookingRepository.findByID(id);
@@ -181,7 +182,7 @@ public class BookingController {
                     // Notify Admin of cancellation
                     messagingTemplate.convertAndSend("/topic/bookings/admin/updates", "BOOKING_CANCELLED");
                     
-                    return "Booking removed from history";
+                    return "Booking removed successfully";
                 }
                 return "Booking not found";
             }
@@ -198,7 +199,8 @@ public class BookingController {
             if (availabilityError != null) {
                 return availabilityError;
             }
-            return bookingRepository.update(id, booking);
+            bookingRepository.update(id, booking);
+            return "Booking updated successfully";
         } catch (Exception e) {
             e.printStackTrace();
             return "Server Error: " + e.getMessage();
