@@ -17,11 +17,7 @@ The **Smart Campus Operations Hub** is a centralized, enterprise-grade facility 
 *   **Module D: Real-time Notification Hub** (Member 4) - Role-based STOMP/WebSocket alerts.
 
 ## 🛠 Individual Contributions & Reports
-Each member has documented their specific technical implementations and architectural decisions:
-- [Member 1 Contribution Report](Member1_Contribution_Report.md)
-- [Member 2 Contribution Report](Member2_Contribution_Report.md)
-- [Member 3 Contribution Report](Member3_Contribution_Report.md)
-- [Member 4 Contribution Report](Member4_Contribution_Report.md)
+
 
 ### **Module A: Facilities & Assets Catalogue (Member 1)**
 *   **Centralized Asset Registry:** Full CRUD operations for campus resources (Lecture Halls, Labs, Meeting Rooms, Projectors, etc.).
