@@ -59,6 +59,15 @@ function BookingForm({ mode }: BookingFormProps) {
 
   const isFacility = mode === 'facilities';
 
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const year = tomorrow.getFullYear();
+    const month = `${tomorrow.getMonth() + 1}`.padStart(2, '0');
+    const day = `${tomorrow.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Sync Luxe Time to standard strings and calculate duration
   useEffect(() => {
     const convert = (h: string, m: string, p: string) => {
@@ -166,11 +175,19 @@ function BookingForm({ mode }: BookingFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const minDate = getTomorrowDate();
     if (!date || !resource || !userID || !year || !semester || !startTime || !endTime || !purpose || (isFacility && !attendees)) {
       setError("⚠️ Please fill all required fields!");
       setConfirm("");
       return;
     }
+
+    if (date < minDate) {
+      setError("⚠️ Application Date must be tomorrow or later.");
+      setConfirm("");
+      return;
+    }
+
     const bookingData = {
       id: editingBooking?.id,
       userId: currentUser?.email || userID,
@@ -287,7 +304,7 @@ function BookingForm({ mode }: BookingFormProps) {
               <div className="form-grid">
                 <div className="form-field">
                   <label>Application Date</label>
-                  <input type="date" value={date} required onChange={(e) => setDate(e.target.value)} />
+                  <input type="date" value={date} min={getTomorrowDate()} required onChange={(e) => setDate(e.target.value)} />
                 </div>
 
                 <div className="form-field">

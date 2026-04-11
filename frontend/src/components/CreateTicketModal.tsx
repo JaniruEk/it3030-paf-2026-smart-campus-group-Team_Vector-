@@ -159,6 +159,17 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
     }));
   };
 
+  const handleContactDetailsChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    if (formData.preferredContactMethod === 'PHONE_NUMBER') {
+      const digitsOnly = rawValue.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({ ...prev, preferredContactDetails: digitsOnly }));
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, preferredContactDetails: rawValue }));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmedLocation = formData.location.trim();
@@ -182,6 +193,14 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
           ? 'Please enter your phone number'
           : 'Please provide your email address',
       );
+      return;
+    }
+
+    if (
+      formData.preferredContactMethod === 'PHONE_NUMBER'
+      && !/^\d{10}$/.test(formData.preferredContactDetails.trim())
+    ) {
+      toast.error('Phone number must contain exactly 10 digits');
       return;
     }
 
@@ -318,13 +337,16 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ onClose, onCreate
                 <input
                   type={formData.preferredContactMethod === 'PHONE_NUMBER' ? 'tel' : 'email'}
                   className="form-input"
+                  inputMode={formData.preferredContactMethod === 'PHONE_NUMBER' ? 'numeric' : undefined}
+                  maxLength={formData.preferredContactMethod === 'PHONE_NUMBER' ? 10 : undefined}
+                  pattern={formData.preferredContactMethod === 'PHONE_NUMBER' ? '[0-9]{10}' : undefined}
                   placeholder={
                     formData.preferredContactMethod === 'PHONE_NUMBER'
                     ? 'Enter your phone number'
                     : 'Enter your email address'
                   }
                   value={formData.preferredContactDetails}
-                  onChange={(e) => setFormData(prev => ({ ...prev, preferredContactDetails: e.target.value }))}
+                  onChange={handleContactDetailsChange}
                 />
                </section>
               </div>
